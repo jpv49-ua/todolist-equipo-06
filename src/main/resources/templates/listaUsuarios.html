@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments :: head (titulo='Usuarios registrados')"></head>
+
+<body>
+
+<nav th:replace="fragments :: menu (usuario=${usuario}, logeado=${logeado})"></nav>
+
+<div class="container-fluid">
+
+    <div class="row mt-3">
+        <div class="col">
+            <h2>Listado de usuarios registrados</h2>
+        </div>
+    </div>
+
+    <div class="row mt-2">
+        <div class="col">
+            <div class="alert alert-success alert-dismissible fade show" role="alert" th:if="${!#strings.isEmpty(mensaje)}">
+                <span th:text="${mensaje}"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${!#strings.isEmpty(error)}">
+                <span th:text="${error}"></span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Email</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="usuarioRegistrado: ${usuarios}">
+                    <td th:text="${usuarioRegistrado.id}"></td>
+                    <td th:text="${usuarioRegistrado.email}"></td>
+                    <td>
+                        <span th:if="${usuarioRegistrado.admin}" class="badge badge-info">Administrador</span>
+                        <span th:if="${!usuarioRegistrado.admin and usuarioRegistrado.bloqueado}" class="badge badge-danger">Bloqueado</span>
+                        <span th:if="${!usuarioRegistrado.admin and !usuarioRegistrado.bloqueado}" class="badge badge-success">Habilitado</span>
+                    </td>
+                    <td>
+                        <a class="btn btn-primary btn-xs"
+                           th:href="@{/registrados/{id}(id=${usuarioRegistrado.id})}">Ver descripción</a>
+                        <form th:unless="${usuarioRegistrado.admin}" class="d-inline" method="post"
+                              th:action="${usuarioRegistrado.bloqueado} ? @{/registrados/{id}/habilitar(id=${usuarioRegistrado.id})} : @{/registrados/{id}/bloquear(id=${usuarioRegistrado.id})}">
+                            <button type="submit" th:class="${usuarioRegistrado.bloqueado} ? 'btn btn-success btn-xs' : 'btn btn-danger btn-xs'"
+                                    th:text="${usuarioRegistrado.bloqueado} ? 'Habilitar' : 'Bloquear'"></button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div th:replace="fragments::javascript"/>
+
+</body>
+</html>

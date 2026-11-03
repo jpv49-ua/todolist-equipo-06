@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments :: head (titulo='Acceso no permitido')"></head>
+
+<body>
+
+<div class="container text-center mt-5">
+    <h2>No tienes permiso para ver esta página</h2>
+    <p class="lead mt-3">Inicia sesión con una cuenta que tenga acceso o vuelve al inicio.</p>
+    <a class="btn btn-primary" th:href="@{/login}">Iniciar sesión</a>
+    <a class="btn btn-link" th:href="@{/}">Volver al inicio</a>
+</div>
+
+</body>
+</html>

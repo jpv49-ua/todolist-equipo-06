@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:fragment="head (titulo)">
+    <meta charset="UTF-8"/>
+    <title th:text="${titulo}"></title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+</head>
+
+<nav th:fragment="menu (usuario, logeado)" class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" th:href="@{/about}">ToDoList</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarMenu"
+            aria-controls="navbarMenu" aria-expanded="false" aria-label="Mostrar menú">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Menú de usuario logeado -->
+    <div th:if="${logeado}" class="collapse navbar-collapse" id="navbarMenu">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/usuarios/{id}/tareas(id=${usuario.id})}">Tareas</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/equipos}">Equipos</a>
+            </li>
+            <li class="nav-item" th:if="${usuario.admin}">
+                <a class="nav-link" th:href="@{/registrados}">Usuarios</a>
+            </li>
+        </ul>
+        <!-- Desplegable con el nombre del usuario (o su email si no tiene nombre) -->
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item dropdown"
+                th:with="nombreUsuario=${usuario.nombre != null and !#strings.isEmpty(usuario.nombre)} ? ${usuario.nombre} : ${usuario.email}">
+                <a class="nav-link dropdown-toggle" href="#" id="menuUsuario" role="button"
+                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                   th:text="${nombreUsuario}"></a>
+                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="menuUsuario">
+                    <a class="dropdown-item" th:href="@{/cuenta}">Cuenta</a>
+                    <a class="dropdown-item" th:href="@{/logout}" th:text="'Cerrar sesión ' + ${nombreUsuario}"></a>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Menú sin usuario logeado -->
+    <div th:unless="${logeado}" class="collapse navbar-collapse" id="navbarMenu">
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item"><a class="nav-link" th:href="@{/login}">Login</a></li>
+            <li class="nav-item"><a class="nav-link" th:href="@{/registro}">Registro</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div th:fragment="javascript">
+    <script th:src="@{/js/jquery.min.js}"></script>
+    <script th:src="@{/js/popper.min.js}"></script>
+    <script th:src="@{/js/bootstrap.min.js}"></script>
+</div>
+
+</html>

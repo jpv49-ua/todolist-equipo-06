@@ -1,0 +1,23 @@
+name: Developer tests
+on: push
+
+jobs:
+  launch-tests:
+    runs-on: ubuntu-latest # Ejecuta directamente en Ubuntu (quitamos la línea container:)
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # Esta acción instala el JDK 17 garantizado y sin problemas de JRE
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin' # Distribución recomendada y estable
+          cache: 'maven'          # Guarda en caché tus librerías de Maven automáticamente
+
+      - name: Make maven wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Launch tests with Maven
+        run: ./mvnw test

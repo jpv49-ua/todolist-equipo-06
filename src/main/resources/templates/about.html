@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments :: head (titulo='Acerca de')"></head>
+
+<body>
+
+<nav th:replace="fragments :: menu (usuario=${usuario}, logeado=${logeado})"></nav>
+
+<div class="container-fluid mt-3">
+    <h1>ToDoList</h1>
+    <ul>
+        <li>Desarrollada por Jose Antonio </li>
+        <li>Versión 1.2.0</li>
+        <li>Fecha de release: 29-10-2026</li>
+    </ul>
+</div>
+
+<div th:replace="fragments::javascript"/>
+
+</body>
+</html>

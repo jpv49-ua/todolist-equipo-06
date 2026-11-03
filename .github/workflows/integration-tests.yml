@@ -1,0 +1,36 @@
+name: Integration tests
+on: push
+jobs:
+  container-job:
+    runs-on: ubuntu-latest
+    services:
+      # Etiqueta usada para acceder al contenedor del servicio
+      postgres:
+        image: postgres:13
+        env:
+          # Variables para arrancar PostgreSQL
+          POSTGRES_USER: mads
+          POSTGRES_PASSWORD: mads
+          POSTGRES_DB: mads_test
+        # Definimos chequeos para esperar hasta que postgres ya ha comenzado
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v5 # Actualizado a la versión más reciente
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5 # Configura Java 17 de forma nativa y eficiente
+        with:
+          java-version: '17'
+          distribution: 'temurin' # Distribución recomendada y estable
+          cache: 'maven' # Mantiene en caché las dependencias para que corra más rápido
+
+      - name: Launch tests with Maven
+        run: ./mvnw test -D spring.profiles.active=postgres
+        env:
+          POSTGRES_HOST: localhost
