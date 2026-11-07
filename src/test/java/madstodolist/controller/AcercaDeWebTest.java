@@ -57,6 +57,6 @@ public class AcercaDeWebTest {
         // se realiza la petición GET,
         // el HTML devuelto contiene la versión actual de la aplicación.
         this.mockMvc.perform(get("/about"))
-                .andExpect(content().string(containsString("Versión 1.2.0")));
+                .andExpect(content().string(containsString("Versión 1.3.0-SNAPSHOT")));
     }
 }
