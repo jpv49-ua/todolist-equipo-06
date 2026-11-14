@@ -25,8 +25,8 @@ Versión actual: **1.2.0**
 ## Instalación
 
 ```
-$ git clone https://github.com/sietrix/mads-todolist.git
-$ cd mads-todolist
+$ git clone https://github.com/jpv49-ua/todolist-equipo-06.git
+$ cd todolist-equipo-06
 ```
 
 ## Puesta en marcha
@@ -41,7 +41,7 @@ $ ./mvnw spring-boot:run
 
 ```
 $ ./mvnw clean package
-$ java -jar target/mads-todolist-Jose-1.2.0.jar
+$ java -jar target/todolist-equipo-06-1.3.0-SNAPSHOT.jar
 ```
 
 ### Con Docker
@@ -56,11 +56,50 @@ En los tres casos la aplicación queda disponible en [http://localhost:8080/logi
 
 ### Con PostgreSQL
 
-Por defecto se usa H2. Para usar PostgreSQL hay que tener una base de datos `mads` (usuario `mads`, contraseña `mads`) en el puerto 5432 de `localhost` y activar el perfil `postgres` (`src/main/resources/application-postgres.properties`):
+Por defecto se usa H2. Para usar PostgreSQL hay dos perfiles:
+
+- `postgres` (`application-postgres.properties`): usa `ddl-auto=update`, así que crea las tablas solo.
+- `postgres-prod` (`application-postgres-prod.properties`): usa `ddl-auto=validate`, así que el esquema tiene que existir antes. Hay que cargar `sql/schema-1.2.0.sql` o `sql/backup11112026.sql`.
+
+Los dos perfiles se conectan a la base de datos `mads` usando las variables `POSTGRES_HOST`, `POSTGRES_PORT`, `DB_USER` y `DB_PASSWD` (por defecto `localhost:5432`, `mads`/`mads`). Se pueden sobrescribir con variables de entorno o con argumentos (`--POSTGRES_HOST=...`). El `ENTRYPOINT` del `Dockerfile` pasa los argumentos a `java -jar`, así que `docker run ... imagen --spring.profiles.active=...` funciona.
+
+Al activar uno de estos perfiles se sustituye el perfil `dev`, así que `InitDbService` no crea el usuario de ejemplo.
+
+#### A) App en local y base de datos en un contenedor
 
 ```
+$ docker run -d --name postgres-develop -p 5432:5432 -e POSTGRES_USER=mads -e POSTGRES_PASSWORD=mads -e POSTGRES_DB=mads postgres:13
+
+# Perfil postgres (crea las tablas solo)
 $ ./mvnw spring-boot:run -D spring-boot.run.profiles=postgres
+
+# O perfil postgres-prod (validate): antes hay que cargar el esquema o el backup
+$ docker exec -i postgres-develop psql -U mads mads < sql/schema-1.2.0.sql
+$ ./mvnw spring-boot:run -D spring-boot.run.profiles=postgres-prod
 ```
+
+#### B) App y base de datos en contenedores en la misma red (como en producción)
+
+```
+$ docker network create network-equipo
+$ docker run -d --name postgres-prod --network network-equipo -e POSTGRES_USER=mads -e POSTGRES_PASSWORD=mads -e POSTGRES_DB=mads postgres:13
+$ docker exec -i postgres-prod psql -U mads mads < sql/backup11112026.sql
+
+$ ./mvnw clean package
+$ docker build -t mads-todolist .
+$ docker run --rm --network network-equipo -p 8080:8080 mads-todolist --spring.profiles.active=postgres-prod --POSTGRES_HOST=postgres-prod
+```
+
+Dentro de la red, la app llega a la base de datos por el nombre del contenedor (`postgres-prod`), no por `localhost`. No hace falta publicar el puerto 5432 porque solo la app accede a la base de datos.
+
+El backup es un volcado hecho con `--clean`, así que sus primeras órdenes son `DROP`. En una base de datos vacía esas órdenes dan error, pero `psql` sigue con el resto y el volcado se carga bien.
+
+#### Comprobación
+
+- Abre [http://localhost:8080/login](http://localhost:8080/login) y entra con un usuario del backup, o regístrate.
+- `docker exec -it postgres-prod psql -U mads mads -c '\dt'` debería listar las tablas `usuarios`, `tareas`, `equipos` y `equipo_usuario`.
+- Si con `postgres-prod` aparece el error `Schema-validation: missing table`, es que no se ha cargado el esquema.
+- Para limpiar: `docker rm -f postgres-prod postgres-develop && docker network rm network-equipo`.
 
 ### Datos iniciales
 
@@ -88,6 +127,12 @@ Para ejecutarlos contra PostgreSQL, que es lo que hace la integración continua:
 $ ./mvnw test -D spring.profiles.active=postgres
 ```
 
+El perfil `postgres` de los tests (`src/test/resources/application-postgres.properties`) usa la base de datos `mads_test`, no `mads`, así que hay que crearla antes. Por ejemplo, con el contenedor del modo A:
+
+```
+$ docker exec postgres-develop createdb -U mads mads_test
+```
+
 Por defecto, los tests usan su propia base de datos H2 en memoria (`src/test/resources/application.properties`) y la limpian antes de cada test con `clean-db.sql`.
 
 - **Repositorio** (`repository`): mapeo JPA de las entidades.
@@ -106,7 +151,7 @@ Hay dos workflows de GitHub Actions en `.github/workflows`, que se ejecutan en c
 La aplicación sigue una arquitectura en capas. Todo el código está en el paquete `madstodolist`:
 
 ```
-Navegador ──► Controller ──► Service ──► Repository ──► Base de datos (H2)
+Navegador ──► Controller ──► Service ──► Repository ──► Base de datos (H2 / PostgreSQL)
                  │              │
              plantillas     DTOs (UsuarioData, TareaData, EquipoData)
              Thymeleaf
@@ -165,4 +210,4 @@ Las plantillas Thymeleaf están en `src/main/resources/templates`. `fragments.ht
 ## Enlaces
 
 - [Tablero Trello](https://trello.com/b/OrjZJEnF/mads)
-- [Repositorio GitHub](https://github.com/sietrix/mads-todolist)
+- [Repositorio GitHub](https://github.com/jpv49-ua/todolist-equipo-06)
