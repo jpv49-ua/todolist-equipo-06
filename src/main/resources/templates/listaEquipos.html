@@ -12,7 +12,7 @@
     <div class="row mt-3">
         <div class="col">
             <h2>Listado de equipos</h2>
-            <a class="btn btn-success" th:href="@{/equipos/nuevo}">Crear equipo</a>
+            <a class="btn btn-outline-success" th:href="@{/equipos/nuevo}">Crear equipo</a>
         </div>
     </div>
 
@@ -48,22 +48,24 @@
                     <td th:text="${equipo.id}"></td>
                     <td><a th:href="@{/equipos/{id}(id=${equipo.id})}" th:text="${equipo.nombre}"></a></td>
                     <td>
-                        <a class="btn btn-primary btn-xs"
+                        <a class="btn btn-outline-primary btn-sm"
                            th:href="@{/equipos/{id}(id=${equipo.id})}">Ver miembros</a>
                         <form class="d-inline" method="post" th:if="${idsEquiposUsuario.contains(equipo.id)}"
                               th:action="@{/equipos/{id}/salir(id=${equipo.id})}">
-                            <button class="btn btn-danger btn-xs" type="submit">Salir</button>
+                            <button class="btn btn-outline-danger btn-sm" type="submit">Salir</button>
                         </form>
                         <form class="d-inline" method="post" th:unless="${idsEquiposUsuario.contains(equipo.id)}"
                               th:action="@{/equipos/{id}/unirse(id=${equipo.id})}">
-                            <button class="btn btn-success btn-xs" type="submit">Unirme</button>
+                            <button class="btn btn-outline-success btn-sm" type="submit">Unirme</button>
                         </form>
-                        <a class="btn btn-warning btn-xs" th:if="${usuario.admin}"
-                           th:href="@{/equipos/{id}/editar(id=${equipo.id})}">Editar</a>
+                        <a class="btn btn-outline-primary btn-sm" th:if="${usuario.admin}"
+                           th:href="@{/equipos/{id}/editar(id=${equipo.id})}"
+                           title="Editar equipo" aria-label="Editar equipo"><svg th:replace="fragments :: iconoEditar"></svg></a>
                         <form class="d-inline" method="post" th:if="${usuario.admin}"
                               th:action="@{/equipos/{id}/eliminar(id=${equipo.id})}"
                               onsubmit="return confirm('¿Estás seguro/a de que quieres eliminar el equipo?');">
-                            <button class="btn btn-danger btn-xs" type="submit">Eliminar</button>
+                            <button class="btn btn-outline-danger btn-sm" type="submit"
+                                    title="Eliminar equipo" aria-label="Eliminar equipo"><svg th:replace="fragments :: iconoBorrar"></svg></button>
                         </form>
                     </td>
                 </tr>

@@ -14,18 +14,18 @@
             <h2 th:text="'Equipo ' + ${equipo.nombre}"></h2>
             <form class="d-inline" method="post" th:if="${esMiembro}"
                   th:action="@{/equipos/{id}/salir(id=${equipo.id})}">
-                <button class="btn btn-danger" type="submit">Salir del equipo</button>
+                <button class="btn btn-outline-danger" type="submit">Salir del equipo</button>
             </form>
             <form class="d-inline" method="post" th:unless="${esMiembro}"
                   th:action="@{/equipos/{id}/unirse(id=${equipo.id})}">
-                <button class="btn btn-success" type="submit">Unirme al equipo</button>
+                <button class="btn btn-outline-success" type="submit">Unirme al equipo</button>
             </form>
-            <a class="btn btn-warning" th:if="${usuario.admin}"
-               th:href="@{/equipos/{id}/editar(id=${equipo.id})}">Editar equipo</a>
+            <a class="btn btn-outline-primary" th:if="${usuario.admin}"
+               th:href="@{/equipos/{id}/editar(id=${equipo.id})}"><svg th:replace="fragments :: iconoEditar"></svg> Editar equipo</a>
             <form class="d-inline" method="post" th:if="${usuario.admin}"
                   th:action="@{/equipos/{id}/eliminar(id=${equipo.id})}"
                   onsubmit="return confirm('¿Estás seguro/a de que quieres eliminar el equipo?');">
-                <button class="btn btn-danger" type="submit">Eliminar equipo</button>
+                <button class="btn btn-outline-danger" type="submit"><svg th:replace="fragments :: iconoBorrar"></svg> Eliminar equipo</button>
             </form>
         </div>
     </div>
