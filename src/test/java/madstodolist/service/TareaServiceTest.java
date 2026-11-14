@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 // Hemos eliminado todos los @Transactional de los tests
 // y usado un script para limpiar la BD de test después de
@@ -145,6 +146,55 @@ public class TareaServiceTest {
         Long tareaId = ids.get("tareaId");
 
         assertThat(tareaService.usuarioContieneTarea(usuarioId,tareaId)).isTrue();
+    }
+
+    @Test
+    public void guardaComentarioAñadeYSustituyeElComentario() {
+        // GIVEN
+        // Una tarea sin comentario en la BD,
+
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+        assertThat(tareaService.findById(tareaId).getComentario()).isNull();
+
+        // WHEN
+        // se guarda un comentario y después otro,
+
+        tareaService.guardaComentario(tareaId, "Comprar jabón");
+        tareaService.guardaComentario(tareaId, "Ir al túnel de lavado");
+
+        // THEN
+        // la tarea solo tiene el último comentario.
+
+        assertThat(tareaService.findById(tareaId).getComentario()).isEqualTo("Ir al túnel de lavado");
+    }
+
+    @Test
+    public void guardaComentarioVacioLanzaExcepcion() {
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+
+        assertThatThrownBy(() -> tareaService.guardaComentario(tareaId, "   "))
+                .isInstanceOf(TareaServiceException.class);
+    }
+
+    @Test
+    public void borraComentarioDejaLaTareaSinComentario() {
+        // GIVEN
+        // Una tarea con comentario en la BD,
+
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+        tareaService.guardaComentario(tareaId, "Comprar jabón");
+
+        // WHEN
+        // se borra el comentario,
+
+        tareaService.borraComentario(tareaId);
+
+        // THEN
+        // la tarea sigue existiendo pero ya no tiene comentario.
+
+        TareaData tarea = tareaService.findById(tareaId);
+        assertThat(tarea).isNotNull();
+        assertThat(tarea.getComentario()).isNull();
     }
 
 }

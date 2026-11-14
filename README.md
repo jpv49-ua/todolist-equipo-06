@@ -14,6 +14,7 @@ Versión actual: **1.2.0**
 - Bloqueo y habilitación de usuarios por parte del administrador. Un usuario bloqueado no puede hacer login.
 - Tras registrarse, el usuario entra directamente en la aplicación sin tener que hacer login.
 - Página de cuenta (`/cuenta`) con los datos del usuario logeado, accesible desde el desplegable del usuario.
+- Comentario en las tareas: cada tarea puede tener un comentario, que se muestra junto a ella en el listado de tareas. En el listado, la columna *Tarea* tiene los botones para editar y borrar la tarea, y la columna *Comentario* los botones para añadir, editar y borrar el comentario. El comentario se escribe en la página `/tareas/{id}`.
 - Equipos: cualquier usuario puede crear equipos, ver sus miembros y unirse o salir de ellos. El administrador puede además cambiar el nombre de un equipo y eliminarlo.
 
 ## Requisitos
@@ -59,7 +60,7 @@ En los tres casos la aplicación queda disponible en [http://localhost:8080/logi
 Por defecto se usa H2. Para usar PostgreSQL hay dos perfiles:
 
 - `postgres` (`application-postgres.properties`): usa `ddl-auto=update`, así que crea las tablas solo.
-- `postgres-prod` (`application-postgres-prod.properties`): usa `ddl-auto=validate`, así que el esquema tiene que existir antes. Hay que cargar `sql/schema-1.2.0.sql` o `sql/backup11112026.sql`.
+- `postgres-prod` (`application-postgres-prod.properties`): usa `ddl-auto=validate`, así que el esquema tiene que existir antes. Hay que cargar `sql/schema-1.2.0.sql` o `sql/backup11112026.sql`, y después la migración `sql/schema-1.2.0-1.3.0.sql`, que añade la columna `comentario` a la tabla `tareas`.
 
 Los dos perfiles se conectan a la base de datos `mads` usando las variables `POSTGRES_HOST`, `POSTGRES_PORT`, `DB_USER` y `DB_PASSWD` (por defecto `localhost:5432`, `mads`/`mads`). Se pueden sobrescribir con variables de entorno o con argumentos (`--POSTGRES_HOST=...`). El `ENTRYPOINT` del `Dockerfile` pasa los argumentos a `java -jar`, así que `docker run ... imagen --spring.profiles.active=...` funciona.
 
@@ -75,6 +76,7 @@ $ ./mvnw spring-boot:run -D spring-boot.run.profiles=postgres
 
 # O perfil postgres-prod (validate): antes hay que cargar el esquema o el backup
 $ docker exec -i postgres-develop psql -U mads mads < sql/schema-1.2.0.sql
+$ docker exec -i postgres-develop psql -U mads mads < sql/schema-1.2.0-1.3.0.sql
 $ ./mvnw spring-boot:run -D spring-boot.run.profiles=postgres-prod
 ```
 
@@ -84,6 +86,7 @@ $ ./mvnw spring-boot:run -D spring-boot.run.profiles=postgres-prod
 $ docker network create network-equipo
 $ docker run -d --name postgres-prod --network network-equipo -e POSTGRES_USER=mads -e POSTGRES_PASSWORD=mads -e POSTGRES_DB=mads postgres:13
 $ docker exec -i postgres-prod psql -U mads mads < sql/backup11112026.sql
+$ docker exec -i postgres-prod psql -U mads mads < sql/schema-1.2.0-1.3.0.sql
 
 $ ./mvnw clean package
 $ docker build -t mads-todolist .
@@ -159,7 +162,7 @@ Navegador ──► Controller ──► Service ──► Repository ──► 
 
 | Paquete | Responsabilidad |
 |---|---|
-| `model` | Entidades JPA `Usuario`, `Tarea` y `Equipo`. `Usuario` y `Tarea` tienen una relación uno a muchos; `Usuario` y `Equipo`, una relación muchos a muchos. `Usuario` incluye los atributos `admin` y `bloqueado`. |
+| `model` | Entidades JPA `Usuario`, `Tarea` y `Equipo`. `Usuario` y `Tarea` tienen una relación uno a muchos; `Tarea` tiene además un `comentario` opcional; `Usuario` y `Equipo`, una relación muchos a muchos. `Usuario` incluye los atributos `admin` y `bloqueado`. |
 | `repository` | Interfaces Spring Data (`UsuarioRepository`, `TareaRepository`, `EquipoRepository`). |
 | `service` | Lógica de negocio y transacciones (`UsuarioService`, `TareaService`, `EquipoService`). Devuelve DTOs, no entidades. `InitDbService` carga los datos iniciales en el perfil `dev`. |
 | `dto` | Objetos de transferencia (`UsuarioData`, `TareaData`, `EquipoData`) y de formularios (`LoginData`, `RegistroData`). La conversión entre entidades y DTOs se hace con ModelMapper (`config/ModelMapperConfig`). |
@@ -177,7 +180,7 @@ Navegador ──► Controller ──► Service ──► Repository ──► 
 
 - Al hacer login, `UsuarioService.login` comprueba el email, la contraseña y si el usuario está bloqueado. Si todo es correcto, `ManagerUserSession` guarda el id del usuario en la sesión HTTP.
 - Cada controlador comprueba el usuario de la sesión antes de atender la petición:
-  - En las páginas de tareas, el usuario logeado debe ser el dueño de las tareas. Si no lo es, se devuelve 401.
+  - En las páginas de tareas y de su comentario, el usuario logeado debe ser el dueño de las tareas. Si no lo es, se devuelve 401.
   - En `/registrados`, `/registrados/{id}` y las acciones de bloqueo, el usuario logeado debe ser el administrador. Si no hay nadie logeado, se devuelve 401. Si el usuario no es administrador, se devuelve 401 con el mensaje "No tienes permisos suficientes para acceder a esta página".
   - En `/equipos/nuevo`, `/equipos/{id}/unirse` y `/equipos/{id}/salir` basta con estar logeado; en las rutas de edición y eliminación de equipos el usuario logeado debe ser el administrador. En ambos casos, sin sesión se devuelve 401.
 - El administrador es redirigido al listado de usuarios al hacer login. El resto de usuarios va a su lista de tareas. Lo mismo ocurre justo después de registrarse, porque el registro deja al usuario logeado.
@@ -192,6 +195,8 @@ Navegador ──► Controller ──► Service ──► Repository ──► 
 | `GET /usuarios/{id}/tareas` | Listado de tareas del usuario |
 | `GET/POST /usuarios/{id}/tareas/nueva` | Crear tarea |
 | `GET/POST /tareas/{id}/editar`, `DELETE /tareas/{id}` | Editar y borrar tarea |
+| `GET /tareas/{id}` | Formulario para añadir o editar el comentario de la tarea |
+| `POST /tareas/{id}/comentario`, `DELETE /tareas/{id}/comentario` | Guardar (añadir o sustituir) y borrar el comentario de la tarea |
 | `GET /registrados` | Listado de usuarios (solo administrador) |
 | `GET /registrados/{id}` | Descripción de un usuario (solo administrador) |
 | `POST /registrados/{id}/bloquear`, `POST /registrados/{id}/habilitar` | Bloquear o habilitar a un usuario (solo administrador) |

@@ -78,6 +78,34 @@ public class TareaService {
         return modelMapper.map(tarea, TareaData.class);
     }
 
+    // Cada tarea tiene como máximo un comentario: si ya tenía uno, se sustituye
+    @Transactional
+    public TareaData guardaComentario(Long idTarea, String comentario) {
+        logger.debug("Guardando comentario de la tarea " + idTarea);
+        if (comentario == null || comentario.trim().isEmpty()) {
+            throw new TareaServiceException("El comentario no puede estar vacío");
+        }
+        Tarea tarea = tareaRepository.findById(idTarea).orElse(null);
+        if (tarea == null) {
+            throw new TareaServiceException("No existe tarea con id " + idTarea);
+        }
+        tarea.setComentario(comentario.trim());
+        tarea = tareaRepository.save(tarea);
+        return modelMapper.map(tarea, TareaData.class);
+    }
+
+    @Transactional
+    public TareaData borraComentario(Long idTarea) {
+        logger.debug("Borrando comentario de la tarea " + idTarea);
+        Tarea tarea = tareaRepository.findById(idTarea).orElse(null);
+        if (tarea == null) {
+            throw new TareaServiceException("No existe tarea con id " + idTarea);
+        }
+        tarea.setComentario(null);
+        tarea = tareaRepository.save(tarea);
+        return modelMapper.map(tarea, TareaData.class);
+    }
+
     @Transactional
     public void borraTarea(Long idTarea) {
         logger.debug("Borrando tarea " + idTarea);

@@ -25,6 +25,9 @@ public class Tarea implements Serializable {
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
+    // Comentario opcional de la tarea (como máximo uno por tarea)
+    private String comentario;
+
     // Constructor vacío necesario para JPA/Hibernate.
     // No debe usarse desde la aplicación.
     public Tarea() {}
@@ -51,6 +54,14 @@ public class Tarea implements Serializable {
 
     public void setTitulo(String titulo) {
         this.titulo = titulo;
+    }
+
+    public String getComentario() {
+        return comentario;
+    }
+
+    public void setComentario(String comentario) {
+        this.comentario = comentario;
     }
 
     // Getters y setters de la relación muchos-a-uno con Usuario
