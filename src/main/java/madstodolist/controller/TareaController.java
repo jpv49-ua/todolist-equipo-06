@@ -6,6 +6,7 @@ import madstodolist.controller.exception.TareaNotFoundException;
 import madstodolist.dto.TareaData;
 import madstodolist.dto.UsuarioData;
 import madstodolist.service.TareaService;
+import madstodolist.service.TareaServiceException;
 import madstodolist.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -103,6 +104,58 @@ public class TareaController {
         tareaService.modificaTarea(idTarea, tareaData.getTitulo());
         flash.addFlashAttribute("mensaje", "Tarea modificada correctamente");
         return "redirect:/usuarios/" + tarea.getUsuarioId() + "/tareas";
+    }
+
+    @GetMapping("/tareas/{id}")
+    public String detalleTarea(@PathVariable(value="id") Long idTarea, @ModelAttribute TareaData tareaData,
+                               Model model, HttpSession session) {
+        TareaData tarea = tareaService.findById(idTarea);
+        if (tarea == null) {
+            throw new TareaNotFoundException();
+        }
+
+        comprobarUsuarioLogeado(tarea.getUsuarioId());
+
+        UsuarioData usuario = usuarioService.findById(tarea.getUsuarioId());
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("tarea", tarea);
+        tareaData.setComentario(tarea.getComentario());
+        return "detalleTarea";
+    }
+
+    @PostMapping("/tareas/{id}/comentario")
+    public String guardaComentario(@PathVariable(value="id") Long idTarea, @ModelAttribute TareaData tareaData,
+                                   RedirectAttributes flash, HttpSession session) {
+        TareaData tarea = tareaService.findById(idTarea);
+        if (tarea == null) {
+            throw new TareaNotFoundException();
+        }
+
+        comprobarUsuarioLogeado(tarea.getUsuarioId());
+
+        try {
+            tareaService.guardaComentario(idTarea, tareaData.getComentario());
+        } catch (TareaServiceException e) {
+            // Si el comentario no es válido, volvemos al formulario mostrando el error
+            flash.addFlashAttribute("error", e.getMessage());
+            return "redirect:/tareas/" + idTarea;
+        }
+        flash.addFlashAttribute("mensaje", "Comentario guardado correctamente");
+        return "redirect:/usuarios/" + tarea.getUsuarioId() + "/tareas";
+    }
+
+    @DeleteMapping("/tareas/{id}/comentario")
+    @ResponseBody
+    public String borrarComentario(@PathVariable(value="id") Long idTarea, HttpSession session) {
+        TareaData tarea = tareaService.findById(idTarea);
+        if (tarea == null) {
+            throw new TareaNotFoundException();
+        }
+
+        comprobarUsuarioLogeado(tarea.getUsuarioId());
+
+        tareaService.borraComentario(idTarea);
+        return "";
     }
 
     @DeleteMapping("/tareas/{id}")
