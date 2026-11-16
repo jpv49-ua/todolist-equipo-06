@@ -25,6 +25,11 @@ public class Tarea implements Serializable {
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
+    //Equipo al que pertenece la tarea. (tarea sin equipo)
+    @ManyToOne
+    @JoinColumn(name = "equipo_id")
+    private Equipo equipo;
+
     // Comentario opcional de la tarea (como máximo uno por tarea)
     private String comentario;
 
@@ -64,6 +69,14 @@ public class Tarea implements Serializable {
         this.comentario = comentario;
     }
 
+    public Equipo getEquipo() {
+        return equipo;
+    }
+
+    public void setEquipo(Equipo equipo) {
+        this.equipo = equipo;
+    }
+
     // Getters y setters de la relación muchos-a-uno con Usuario
 
     public Usuario getUsuario() {
@@ -73,11 +86,15 @@ public class Tarea implements Serializable {
     // Método para establecer la relación con el usuario
 
     public void setUsuario(Usuario usuario) {
-        // Comprueba si el usuario ya está establecido
-        if(this.usuario != usuario) {
+        if (this.usuario != usuario) {
+            // Hay que quitarla del usuario anterior, si lo tenía
+            if (this.usuario != null) {
+                this.usuario.getTareas().remove(this);
+            }
             this.usuario = usuario;
-            // Añade la tarea a la lista de tareas del usuario
-            usuario.addTarea(this);
+            if (usuario != null) {
+                usuario.addTarea(this);
+            }
         }
     }
 

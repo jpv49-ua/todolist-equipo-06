@@ -17,6 +17,12 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import madstodolist.controller.exception.TareaNotFoundException;
+import madstodolist.controller.exception.UsuarioNoMiembroEquipoException;
+import madstodolist.dto.TareaData;
+import madstodolist.service.TareaService;
+import madstodolist.service.TareaServiceException;
+import java.util.Comparator;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,6 +38,9 @@ public class EquipoController {
 
     @Autowired
     ManagerUserSession managerUserSession;
+
+    @Autowired
+    TareaService tareaService;
 
     // Comprueba que hay un usuario logeado y lo devuelve.
     // Si no lo hay se devuelve un 401
@@ -53,6 +62,20 @@ public class EquipoController {
         if (!usuario.isAdmin())
             throw new UsuarioNoAdministradorException();
         return usuario;
+    }
+
+    //Comprueba que el equipo existe y que el usuario logeado es miembro del equipo, y devuelve el equipo
+    private EquipoData comprobarMiembroDeEquipo(Long idEquipo, UsuarioData usuario) {
+        EquipoData equipo;
+        try {
+            equipo = equipoService.recuperarEquipo(idEquipo);
+        } catch (EquipoServiceException e) {
+            throw new EquipoNotFoundException();
+        }
+        if (!equipoService.esMiembroDeEquipo(idEquipo, usuario.getId())) {
+            throw new UsuarioNoMiembroEquipoException();
+        }
+        return equipo;
     }
 
     @GetMapping("/equipos")
@@ -86,7 +109,27 @@ public class EquipoController {
         model.addAttribute("logeado", true);
         model.addAttribute("equipo", equipo);
         model.addAttribute("miembros", miembros);
-        model.addAttribute("esMiembro", miembros.stream().anyMatch(m -> m.getId().equals(usuario.getId())));
+
+        boolean esMiembro = miembros.stream().anyMatch(m -> m.getId().equals(usuario.getId()));
+
+        // Ordenamos los miembros: primero el usuario logeado, después por nombre
+        miembros.sort(Comparator.comparing((UsuarioData m) -> !m.getId().equals(usuario.getId()))
+                .thenComparing(m -> m.getNombre() != null ? m.getNombre() : m.getEmail(),
+                        String.CASE_INSENSITIVE_ORDER));
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("logeado", true);
+        model.addAttribute("equipo", equipo);
+        model.addAttribute("miembros", miembros);
+        model.addAttribute("esMiembro", esMiembro);
+
+        // Las tareas del equipo solo las ven sus miembros, agrupadas por responsable
+        if (esMiembro) {
+            List<TareaData> tareas = tareaService.allTareasEquipo(idEquipo);
+            model.addAttribute("tareas", tareas);
+            model.addAttribute("tareasPorMiembro",
+                    tareas.stream().collect(Collectors.groupingBy(TareaData::getUsuarioId)));
+        }
         return "descripcionEquipo";
     }
 
@@ -196,5 +239,115 @@ public class EquipoController {
         }
         flash.addFlashAttribute("mensaje", "Equipo eliminado correctamente");
         return "redirect:/equipos";
+    }
+
+    @GetMapping("/equipos/{id}/tareas/nueva")
+    public String formNuevaTareaEquipo(@PathVariable(value="id") Long idEquipo,
+                                       @ModelAttribute TareaData tareaData, Model model) {
+        UsuarioData usuario = comprobarUsuarioLogeado();
+        EquipoData equipo = comprobarMiembroDeEquipo(idEquipo, usuario);
+
+        List<UsuarioData> miembros = equipoService.usuariosEquipo(idEquipo);
+        miembros.sort(Comparator.comparing((UsuarioData m) ->
+                m.getNombre() != null ? m.getNombre() : m.getEmail(), String.CASE_INSENSITIVE_ORDER));
+
+        // Por defecto, el responsable propuesto es quien crea la tarea
+        if (tareaData.getUsuarioId() == null) {
+            tareaData.setUsuarioId(usuario.getId());
+        }
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("logeado", true);
+        model.addAttribute("equipo", equipo);
+        model.addAttribute("miembros", miembros);
+        return "formNuevaTareaEquipo";
+    }
+
+    @PostMapping("/equipos/{id}/tareas/nueva")
+    public String nuevaTareaEquipo(@PathVariable(value="id") Long idEquipo,
+                                   @ModelAttribute TareaData tareaData, RedirectAttributes flash) {
+        UsuarioData usuario = comprobarUsuarioLogeado();
+        comprobarMiembroDeEquipo(idEquipo, usuario);
+
+        Long idResponsable = tareaData.getUsuarioId() != null
+                ? tareaData.getUsuarioId()
+                : usuario.getId();
+        try {
+            tareaService.nuevaTareaEquipo(idEquipo, idResponsable, tareaData.getTitulo());
+        } catch (TareaServiceException e) {
+
+            flash.addFlashAttribute("error", e.getMessage());
+            return "redirect:/equipos/" + idEquipo + "/tareas/nueva";
+        }
+        flash.addFlashAttribute("mensaje", "Tarea añadida al equipo correctamente");
+        return "redirect:/equipos/" + idEquipo;
+    }
+
+    @GetMapping("/equipos/{id}/tareas/{idTarea}/editar")
+    public String formEditarTareaEquipo(@PathVariable(value="id") Long idEquipo,
+                                        @PathVariable(value="idTarea") Long idTarea, Model model) {
+        UsuarioData usuario = comprobarUsuarioLogeado();
+        EquipoData equipo = comprobarMiembroDeEquipo(idEquipo, usuario);
+
+        TareaData tarea = tareaService.findById(idTarea);
+        if (tarea == null || !idEquipo.equals(tarea.getEquipoId())) {
+            throw new TareaNotFoundException();
+        }
+
+        List<UsuarioData> miembros = equipoService.usuariosEquipo(idEquipo);
+        miembros.sort(Comparator.comparing((UsuarioData m) ->
+                m.getNombre() != null ? m.getNombre() : m.getEmail(), String.CASE_INSENSITIVE_ORDER));
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("logeado", true);
+        model.addAttribute("equipo", equipo);
+        model.addAttribute("miembros", miembros);
+        model.addAttribute("tareaData", tarea);
+        return "formEditarTareaEquipo";
+    }
+
+    @PostMapping("/equipos/{id}/tareas/{idTarea}/editar")
+    public String editarTareaEquipo(@PathVariable(value="id") Long idEquipo,
+                                    @PathVariable(value="idTarea") Long idTarea,
+                                    @ModelAttribute TareaData tareaData, RedirectAttributes flash) {
+
+        UsuarioData usuario = comprobarUsuarioLogeado();
+        comprobarMiembroDeEquipo(idEquipo, usuario);
+
+        TareaData tarea = tareaService.findById(idTarea);
+        if(tarea == null || !idEquipo.equals(tarea.getEquipoId())) {
+            throw new TareaNotFoundException();
+        }
+
+        try {
+
+            tareaService.modificaTareaEquipo(idTarea, tareaData.getTitulo(), tareaData.getUsuarioId());
+        } catch(TareaServiceException e) {
+
+            flash.addFlashAttribute("error", e.getMessage());
+
+            return "redirect:/equipos/" + idEquipo + "/tareas/" + idTarea + "/editar";
+        }
+        flash.addFlashAttribute("mensaje", "Tarea modificada correctamente");
+
+        return "redirect:/equipos/" + idEquipo;
+    }
+
+    // Borra una tarea del equipo. Solo puede hacerlo un miembro del equipo.
+    @PostMapping("/equipos/{id}/tareas/{idTarea}/borrar")
+    public String borrarTareaDeEquipo(@PathVariable(value="id") Long idEquipo,
+                                      @PathVariable(value="idTarea") Long idTarea,
+                                      RedirectAttributes flash) {
+        UsuarioData usuario = comprobarUsuarioLogeado();
+        comprobarMiembroDeEquipo(idEquipo, usuario);
+
+        TareaData tarea = tareaService.findById(idTarea);
+        if (tarea == null || !idEquipo.equals(tarea.getEquipoId())) {
+            throw new TareaNotFoundException();
+        }
+
+        tareaService.borraTarea(idTarea);
+        flash.addFlashAttribute("mensaje", "Tarea borrada correctamente");
+        return "redirect:/equipos/" + idEquipo;
     }
 }

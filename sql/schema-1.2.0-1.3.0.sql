@@ -4,3 +4,8 @@
 --
 
 ALTER TABLE public.tareas ADD COLUMN comentario character varying(255);
+-- Tareas de equipo: columna equipo_id y su clave ajena a equipos
+ALTER TABLE public.tareas ADD COLUMN equipo_id bigint;
+
+ALTER TABLE public.tareas
+    ADD CONSTRAINT fk_tareas_equipo FOREIGN KEY (equipo_id) REFERENCES public.equipos(id);
