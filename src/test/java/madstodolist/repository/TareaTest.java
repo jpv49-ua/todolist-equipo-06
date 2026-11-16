@@ -14,6 +14,9 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import madstodolist.model.Equipo;
+import madstodolist.repository.EquipoRepository;
+
 @SpringBootTest
 @Sql(scripts = "/clean-db.sql")
 public class TareaTest {
@@ -23,6 +26,9 @@ public class TareaTest {
 
     @Autowired
     TareaRepository tareaRepository;
+
+    @Autowired
+    private EquipoRepository equipoRepository;
 
     //
     // Tests modelo Tarea en memoria, sin la conexión con la BD
@@ -147,20 +153,23 @@ public class TareaTest {
 
     @Test
     @Transactional
-    public void salvarTareaEnBaseDatosConUsuarioNoBDLanzaExcepcion() {
+    public void salvarTareaDeEquipoSinResponsableEsPosible() {
         // GIVEN
-        // Un usuario nuevo que no está en la BD
-        // y una tarea asociada a ese usuario,
+        // Un equipo en la base de datos
+        Equipo equipo = new Equipo("Equipo A");
+        equipoRepository.save(equipo);
 
-        Usuario usuario = new Usuario("juan.gutierrez@gmail.com");
-        Tarea tarea = new Tarea(usuario, "Práctica 1 de MADS");
+        // WHEN
+        // salvamos una tarea de ese equipo sin responsable asignado
+        Tarea tarea = new Tarea(equipo, "Cortar la cebolla");
+        tareaRepository.save(tarea);
 
-        // WHEN // THEN
-        // se lanza una excepción al intentar salvar la tarea en la BD
-
-        Assertions.assertThrows(Exception.class, () -> {
-            tareaRepository.save(tarea);
-        });
+        // THEN
+        // la tarea se guarda correctamente y no tiene responsable
+        Tarea tareaBD = tareaRepository.findById(tarea.getId()).orElse(null);
+        assertThat(tareaBD).isNotNull();
+        assertThat(tareaBD.getUsuario()).isNull();
+        assertThat(tareaBD.getEquipo()).isEqualTo(equipo);
     }
 
     @Test
