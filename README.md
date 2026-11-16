@@ -14,6 +14,7 @@ Versión actual: **1.2.0**
 - Bloqueo y habilitación de usuarios por parte del administrador. Un usuario bloqueado no puede hacer login.
 - Tras registrarse, el usuario entra directamente en la aplicación sin tener que hacer login.
 - Página de cuenta (`/cuenta`) con los datos del usuario logeado, accesible desde el desplegable del usuario.
+- Edición del perfil (`/cuenta/editar`): desde su página de cuenta, cada usuario puede modificar su email, su nombre y su fecha de nacimiento. No se puede dejar el email vacío ni usar uno que ya pertenezca a otro usuario; la contraseña y los atributos `admin` y `bloqueado` no se modifican.
 - Comentario en las tareas: cada tarea puede tener un comentario, que se muestra junto a ella en el listado de tareas. En el listado, la columna *Tarea* tiene los botones para editar y borrar la tarea, y la columna *Comentario* los botones para añadir, editar y borrar el comentario. El comentario se escribe en la página `/tareas/{id}`.
 - Equipos: cualquier usuario puede crear equipos, ver sus miembros y unirse o salir de ellos. El administrador puede además cambiar el nombre de un equipo y eliminarlo.
 
@@ -165,7 +166,7 @@ Navegador ──► Controller ──► Service ──► Repository ──► 
 | `model` | Entidades JPA `Usuario`, `Tarea` y `Equipo`. `Usuario` y `Tarea` tienen una relación uno a muchos; `Tarea` tiene además un `comentario` opcional; `Usuario` y `Equipo`, una relación muchos a muchos. `Usuario` incluye los atributos `admin` y `bloqueado`. |
 | `repository` | Interfaces Spring Data (`UsuarioRepository`, `TareaRepository`, `EquipoRepository`). |
 | `service` | Lógica de negocio y transacciones (`UsuarioService`, `TareaService`, `EquipoService`). Devuelve DTOs, no entidades. `InitDbService` carga los datos iniciales en el perfil `dev`. |
-| `dto` | Objetos de transferencia (`UsuarioData`, `TareaData`, `EquipoData`) y de formularios (`LoginData`, `RegistroData`). La conversión entre entidades y DTOs se hace con ModelMapper (`config/ModelMapperConfig`). |
+| `dto` | Objetos de transferencia (`UsuarioData`, `TareaData`, `EquipoData`) y de formularios (`LoginData`, `RegistroData`, `PerfilData`). La conversión entre entidades y DTOs se hace con ModelMapper (`config/ModelMapperConfig`). |
 | `controller` | Controladores Spring MVC que atienden las peticiones y eligen la plantilla. |
 | `controller/exception` | Excepciones anotadas con `@ResponseStatus` que se traducen en códigos HTTP (401, 404). |
 | `authentication` | `ManagerUserSession`: guarda en la sesión HTTP el id del usuario logeado. |
@@ -201,6 +202,7 @@ Navegador ──► Controller ──► Service ──► Repository ──► 
 | `GET /registrados/{id}` | Descripción de un usuario (solo administrador) |
 | `POST /registrados/{id}/bloquear`, `POST /registrados/{id}/habilitar` | Bloquear o habilitar a un usuario (solo administrador) |
 | `GET /cuenta` | Datos del usuario logeado |
+| `GET/POST /cuenta/editar` | Editar el perfil del usuario logeado |
 | `GET /equipos` | Listado de equipos |
 | `GET /equipos/{id}` | Detalle de un equipo y sus miembros |
 | `GET/POST /equipos/nuevo` | Crear equipo (el creador queda como miembro) |
