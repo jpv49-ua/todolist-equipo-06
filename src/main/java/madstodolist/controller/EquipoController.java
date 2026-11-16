@@ -2,12 +2,17 @@ package madstodolist.controller;
 
 import madstodolist.authentication.ManagerUserSession;
 import madstodolist.controller.exception.EquipoNotFoundException;
+import madstodolist.controller.exception.TareaNotFoundException;
 import madstodolist.controller.exception.UsuarioNoAdministradorException;
 import madstodolist.controller.exception.UsuarioNoLogeadoException;
+import madstodolist.controller.exception.UsuarioNoMiembroEquipoException;
 import madstodolist.dto.EquipoData;
+import madstodolist.dto.TareaData;
 import madstodolist.dto.UsuarioData;
 import madstodolist.service.EquipoService;
 import madstodolist.service.EquipoServiceException;
+import madstodolist.service.TareaService;
+import madstodolist.service.TareaServiceException;
 import madstodolist.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -17,13 +22,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import madstodolist.controller.exception.TareaNotFoundException;
-import madstodolist.controller.exception.UsuarioNoMiembroEquipoException;
-import madstodolist.dto.TareaData;
-import madstodolist.service.TareaService;
-import madstodolist.service.TareaServiceException;
-import java.util.Comparator;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -64,7 +64,8 @@ public class EquipoController {
         return usuario;
     }
 
-    //Comprueba que el equipo existe y que el usuario logeado es miembro del equipo, y devuelve el equipo
+    // Comprueba que el equipo existe (404 si no) y que el usuario logeado
+    // es miembro del equipo (401 si no), y devuelve el equipo
     private EquipoData comprobarMiembroDeEquipo(Long idEquipo, UsuarioData usuario) {
         EquipoData equipo;
         try {
@@ -76,6 +77,23 @@ public class EquipoController {
             throw new UsuarioNoMiembroEquipoException();
         }
         return equipo;
+    }
+
+    // Comprueba que la tarea existe y pertenece al equipo indicado (404 si no)
+    private TareaData comprobarTareaDeEquipo(Long idEquipo, Long idTarea) {
+        TareaData tarea = tareaService.findById(idTarea);
+        if (tarea == null || !idEquipo.equals(tarea.getEquipoId())) {
+            throw new TareaNotFoundException();
+        }
+        return tarea;
+    }
+
+    // Devuelve los miembros del equipo ordenados por nombre (o email si no tienen)
+    private List<UsuarioData> miembrosOrdenados(Long idEquipo) {
+        List<UsuarioData> miembros = equipoService.usuariosEquipo(idEquipo);
+        miembros.sort(Comparator.comparing((UsuarioData m) ->
+                m.getNombre() != null ? m.getNombre() : m.getEmail(), String.CASE_INSENSITIVE_ORDER));
+        return miembros;
     }
 
     @GetMapping("/equipos")
@@ -105,11 +123,6 @@ public class EquipoController {
             throw new EquipoNotFoundException();
         }
 
-        model.addAttribute("usuario", usuario);
-        model.addAttribute("logeado", true);
-        model.addAttribute("equipo", equipo);
-        model.addAttribute("miembros", miembros);
-
         boolean esMiembro = miembros.stream().anyMatch(m -> m.getId().equals(usuario.getId()));
 
         // Ordenamos los miembros: primero el usuario logeado, después por nombre
@@ -123,13 +136,21 @@ public class EquipoController {
         model.addAttribute("miembros", miembros);
         model.addAttribute("esMiembro", esMiembro);
 
-        // Las tareas del equipo solo las ven sus miembros, agrupadas por responsable
+        // Las tareas del equipo solo las ven sus miembros
         if (esMiembro) {
             List<TareaData> tareas = tareaService.allTareasEquipo(idEquipo);
             model.addAttribute("tareas", tareas);
-            model.addAttribute("tareasPorMiembro",
-                    tareas.stream().collect(Collectors.groupingBy(TareaData::getUsuarioId)));
+
+            // Agrupadas por responsable, dejando fuera las que no tienen
+            model.addAttribute("tareasPorMiembro", tareas.stream()
+                    .filter(t -> t.getUsuarioId() != null)
+                    .collect(Collectors.groupingBy(TareaData::getUsuarioId)));
+
+            model.addAttribute("tareasSinAsignar", tareas.stream()
+                    .filter(t -> t.getUsuarioId() == null)
+                    .collect(Collectors.toList()));
         }
+
         return "descripcionEquipo";
     }
 
@@ -247,19 +268,10 @@ public class EquipoController {
         UsuarioData usuario = comprobarUsuarioLogeado();
         EquipoData equipo = comprobarMiembroDeEquipo(idEquipo, usuario);
 
-        List<UsuarioData> miembros = equipoService.usuariosEquipo(idEquipo);
-        miembros.sort(Comparator.comparing((UsuarioData m) ->
-                m.getNombre() != null ? m.getNombre() : m.getEmail(), String.CASE_INSENSITIVE_ORDER));
-
-        // Por defecto, el responsable propuesto es quien crea la tarea
-        if (tareaData.getUsuarioId() == null) {
-            tareaData.setUsuarioId(usuario.getId());
-        }
-
         model.addAttribute("usuario", usuario);
         model.addAttribute("logeado", true);
         model.addAttribute("equipo", equipo);
-        model.addAttribute("miembros", miembros);
+        model.addAttribute("miembros", miembrosOrdenados(idEquipo));
         return "formNuevaTareaEquipo";
     }
 
@@ -269,13 +281,9 @@ public class EquipoController {
         UsuarioData usuario = comprobarUsuarioLogeado();
         comprobarMiembroDeEquipo(idEquipo, usuario);
 
-        Long idResponsable = tareaData.getUsuarioId() != null
-                ? tareaData.getUsuarioId()
-                : usuario.getId();
         try {
-            tareaService.nuevaTareaEquipo(idEquipo, idResponsable, tareaData.getTitulo());
+            tareaService.nuevaTareaEquipo(idEquipo, tareaData.getUsuarioId(), tareaData.getTitulo());
         } catch (TareaServiceException e) {
-
             flash.addFlashAttribute("error", e.getMessage());
             return "redirect:/equipos/" + idEquipo + "/tareas/nueva";
         }
@@ -288,20 +296,12 @@ public class EquipoController {
                                         @PathVariable(value="idTarea") Long idTarea, Model model) {
         UsuarioData usuario = comprobarUsuarioLogeado();
         EquipoData equipo = comprobarMiembroDeEquipo(idEquipo, usuario);
-
-        TareaData tarea = tareaService.findById(idTarea);
-        if (tarea == null || !idEquipo.equals(tarea.getEquipoId())) {
-            throw new TareaNotFoundException();
-        }
-
-        List<UsuarioData> miembros = equipoService.usuariosEquipo(idEquipo);
-        miembros.sort(Comparator.comparing((UsuarioData m) ->
-                m.getNombre() != null ? m.getNombre() : m.getEmail(), String.CASE_INSENSITIVE_ORDER));
+        TareaData tarea = comprobarTareaDeEquipo(idEquipo, idTarea);
 
         model.addAttribute("usuario", usuario);
         model.addAttribute("logeado", true);
         model.addAttribute("equipo", equipo);
-        model.addAttribute("miembros", miembros);
+        model.addAttribute("miembros", miembrosOrdenados(idEquipo));
         model.addAttribute("tareaData", tarea);
         return "formEditarTareaEquipo";
     }
@@ -310,26 +310,17 @@ public class EquipoController {
     public String editarTareaEquipo(@PathVariable(value="id") Long idEquipo,
                                     @PathVariable(value="idTarea") Long idTarea,
                                     @ModelAttribute TareaData tareaData, RedirectAttributes flash) {
-
         UsuarioData usuario = comprobarUsuarioLogeado();
         comprobarMiembroDeEquipo(idEquipo, usuario);
-
-        TareaData tarea = tareaService.findById(idTarea);
-        if(tarea == null || !idEquipo.equals(tarea.getEquipoId())) {
-            throw new TareaNotFoundException();
-        }
+        comprobarTareaDeEquipo(idEquipo, idTarea);
 
         try {
-
             tareaService.modificaTareaEquipo(idTarea, tareaData.getTitulo(), tareaData.getUsuarioId());
-        } catch(TareaServiceException e) {
-
+        } catch (TareaServiceException e) {
             flash.addFlashAttribute("error", e.getMessage());
-
             return "redirect:/equipos/" + idEquipo + "/tareas/" + idTarea + "/editar";
         }
         flash.addFlashAttribute("mensaje", "Tarea modificada correctamente");
-
         return "redirect:/equipos/" + idEquipo;
     }
 
@@ -340,14 +331,28 @@ public class EquipoController {
                                       RedirectAttributes flash) {
         UsuarioData usuario = comprobarUsuarioLogeado();
         comprobarMiembroDeEquipo(idEquipo, usuario);
-
-        TareaData tarea = tareaService.findById(idTarea);
-        if (tarea == null || !idEquipo.equals(tarea.getEquipoId())) {
-            throw new TareaNotFoundException();
-        }
+        comprobarTareaDeEquipo(idEquipo, idTarea);
 
         tareaService.borraTarea(idTarea);
         flash.addFlashAttribute("mensaje", "Tarea borrada correctamente");
+        return "redirect:/equipos/" + idEquipo;
+    }
+
+    // Un miembro se asigna a sí mismo una tarea del equipo que estaba sin asignar
+    @PostMapping("/equipos/{id}/tareas/{idTarea}/asignarme")
+    public String asignarmeTareaEquipo(@PathVariable(value="id") Long idEquipo,
+                                       @PathVariable(value="idTarea") Long idTarea,
+                                       RedirectAttributes flash) {
+        UsuarioData usuario = comprobarUsuarioLogeado();
+        comprobarMiembroDeEquipo(idEquipo, usuario);
+        TareaData tarea = comprobarTareaDeEquipo(idEquipo, idTarea);
+
+        try {
+            tareaService.modificaTareaEquipo(idTarea, tarea.getTitulo(), usuario.getId());
+            flash.addFlashAttribute("mensaje", "Te has asignado la tarea");
+        } catch (TareaServiceException e) {
+            flash.addFlashAttribute("error", e.getMessage());
+        }
         return "redirect:/equipos/" + idEquipo;
     }
 }

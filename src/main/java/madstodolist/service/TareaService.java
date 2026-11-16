@@ -46,38 +46,30 @@ public class TareaService {
         return modelMapper.map(tarea, TareaData.class);
     }
 
-    //Crea una tarea asociada a un equipo. La tarea sigue teniendo como responsable al usuario que la crea, que debe pertenecer al equipo.
+    // Crea una tarea asociada a un equipo. El responsable es opcional:
+    // si es null, la tarea queda sin asignar.
     @Transactional
-    public TareaData nuevaTareaEquipo(Long idEquipo, Long idUsuario, String tituloTarea) {
-
-        //logger.debug("Añadiendo tarea " + tituloTarea + " al equipo " + idEquipo);
-
-        if(tituloTarea == null || tituloTarea.trim().isEmpty()) {
-
+    public TareaData nuevaTareaEquipo(Long idEquipo, Long idResponsable, String tituloTarea) {
+        logger.debug("Añadiendo tarea " + tituloTarea + " al equipo " + idEquipo);
+        if (tituloTarea == null || tituloTarea.trim().isEmpty()) {
             throw new TareaServiceException("El título de la tarea no puede estar vacío");
         }
-
         Equipo equipo = equipoRepository.findById(idEquipo).orElse(null);
-        if(equipo == null) {
-
+        if (equipo == null) {
             throw new TareaServiceException("Equipo " + idEquipo + " no existe al crear tarea " + tituloTarea);
         }
-
-        Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
-        if(usuario == null) {
-
-            throw new TareaServiceException("Usuario " + idUsuario + " no existe al crear tarea " + tituloTarea);
+        Tarea tarea = new Tarea(equipo, tituloTarea.trim());
+        if (idResponsable != null) {
+            Usuario responsable = usuarioRepository.findById(idResponsable).orElse(null);
+            if (responsable == null) {
+                throw new TareaServiceException("Usuario " + idResponsable + " no existe al crear tarea " + tituloTarea);
+            }
+            if (!equipo.getUsuarios().contains(responsable)) {
+                throw new TareaServiceException("Usuario " + idResponsable + " no pertenece al equipo " + idEquipo);
+            }
+            tarea.setUsuario(responsable);
         }
-
-        if(!equipo.getUsuarios().contains(usuario)) {
-
-            throw new TareaServiceException("Usuario " + idUsuario + " no pertenece al equipo " + idEquipo);
-        }
-
-        Tarea tarea = new Tarea(usuario, tituloTarea.trim());
-        tarea.setEquipo(equipo);
         tareaRepository.save(tarea);
-
         return modelMapper.map(tarea, TareaData.class);
     }
 
@@ -94,19 +86,6 @@ public class TareaService {
         return tareaRepository.findByEquipoIdOrderByIdAsc(idEquipo).stream()
                 .map(tarea -> modelMapper.map(tarea, TareaData.class))
                 .collect(Collectors.toList());
-    }
-
-    //Desvincula una tarea de su equipo --> pasa a ser una tarea personal
-    @Transactional
-    public TareaData desvincularTareaDeEquipo(Long idTarea) {
-        logger.debug("Desvinculando la tarea " + idTarea + " de su equipo");
-        Tarea tarea = tareaRepository.findById(idTarea).orElse(null);
-        if (tarea == null) {
-            throw new TareaServiceException("No existe tarea con id " + idTarea);
-        }
-        tarea.setEquipo(null);
-        tarea = tareaRepository.save(tarea);
-        return modelMapper.map(tarea, TareaData.class);
     }
 
     @Transactional(readOnly = true)
@@ -215,21 +194,28 @@ public class TareaService {
             throw new TareaServiceException("La tarea " + idTarea + " no pertenece a ningún equipo");
         }
 
-        Usuario responsable = usuarioRepository.findById(idResponsable).orElse(null);
-        if(responsable == null) {
-
-            throw new TareaServiceException("Usuario " + idResponsable + " no existe");
-        }
-
-        if(!equipo.getUsuarios().contains(responsable)) {
-
-            throw new TareaServiceException("Usuario " + idResponsable + " no pertenece al equipo " + equipo.getId());
-        }
-
         tarea.setTitulo(nuevoTitulo.trim());
-        tarea.setUsuario(responsable);
-        tarea = tareaRepository.save(tarea);
 
+        if (idResponsable == null) {
+
+            // La tarea se queda sin asignar
+            tarea.setUsuario(null);
+        } else {
+
+            Usuario responsable = usuarioRepository.findById(idResponsable).orElse(null);
+            if(responsable == null) {
+
+                throw new TareaServiceException("Usuario " + idResponsable + " no existe");
+            }
+            if(!equipo.getUsuarios().contains(responsable)) {
+
+                throw new TareaServiceException("Usuario " + idResponsable + " no pertenece al equipo " + equipo.getId());
+            }
+
+            tarea.setUsuario(responsable);
+        }
+
+        tarea = tareaRepository.save(tarea);
         return modelMapper.map(tarea, TareaData.class);
     }
 }

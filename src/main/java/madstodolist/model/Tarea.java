@@ -17,7 +17,6 @@ public class Tarea implements Serializable {
     @NotNull
     private String titulo;
 
-    @NotNull
     // Relación muchos-a-uno entre tareas y usuario
     @ManyToOne
     // Nombre de la columna en la BD que guarda físicamente
@@ -41,6 +40,12 @@ public class Tarea implements Serializable {
     public Tarea(Usuario usuario, String titulo) {
         this.titulo = titulo;
         setUsuario(usuario); // Esto añadirá la tarea a la lista de tareas del usuario
+    }
+
+    // Tarea de equipo sin responsable asignado
+    public Tarea(Equipo equipo, String titulo) {
+        this.titulo = titulo;
+        this.equipo = equipo;
     }
 
     // Getters y setters básicos
@@ -107,8 +112,8 @@ public class Tarea implements Serializable {
             // Si tenemos los ID, comparamos por ID
             return Objects.equals(id, tarea.id);
         // si no comparamos por campos obligatorios
-        return titulo.equals(tarea.titulo) &&
-                usuario.equals(tarea.usuario);
+        return Objects.equals(titulo, tarea.titulo) &&
+                Objects.equals(usuario, tarea.usuario);
     }
 
     @Override

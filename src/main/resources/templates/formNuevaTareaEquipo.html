@@ -40,8 +40,9 @@
 
                         <div class="form-group mb-0">
                             <label for="usuarioId">¿Quién se encarga?</label>
-                            <select class="form-control" id="usuarioId" name="usuarioId" required
+                            <select class="form-control" id="usuarioId" name="usuarioId"
                                     th:field="*{usuarioId}">
+                                <option value="">— Sin asignar —</option>
                                 <option th:each="miembro : ${miembros}" th:value="${miembro.id}"
                                         th:text="${miembro.nombre} ?: ${miembro.email}"></option>
                             </select>

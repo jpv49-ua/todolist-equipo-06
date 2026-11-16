@@ -77,8 +77,8 @@
                             <li class="d-flex align-items-start justify-content-between py-1 border-bottom"
                                 th:each="tarea, iter: ${tareasPorMiembro.get(miembro.id)}"
                                 th:classappend="${iter.last} ? 'border-bottom-0'">
-                                 <span class="mr-2" style="word-break: break-word;"
-                                       th:text="${tarea.titulo}"></span>
+                                <span class="mr-2" style="word-break: break-word;"
+                                      th:text="${tarea.titulo}"></span>
                                 <span class="flex-shrink-0 text-nowrap">
                                     <a class="btn btn-outline-primary btn-sm"
                                        th:href="@{/equipos/{id}/tareas/{idTarea}/editar(id=${equipo.id},idTarea=${tarea.id})}"
@@ -96,6 +96,43 @@
                 </tr>
                 </tbody>
             </table>
+
+            <div th:if="${esMiembro}">
+                <hr class="my-4"/>
+
+                <h5 class="mb-3">
+                    Tareas sin asignar
+                    <span class="badge badge-warning ml-1"
+                          th:if="${!#lists.isEmpty(tareasSinAsignar)}"
+                          th:text="${#lists.size(tareasSinAsignar)}"></span>
+                </h5>
+
+                <p class="text-muted" th:if="${#lists.isEmpty(tareasSinAsignar)}">
+                    No hay tareas pendientes de asignar.</p>
+
+                <ul class="list-group" th:unless="${#lists.isEmpty(tareasSinAsignar)}">
+                    <li class="list-group-item d-flex justify-content-between align-items-center"
+                        th:each="tarea: ${tareasSinAsignar}">
+                        <span class="mr-2" style="word-break: break-word;" th:text="${tarea.titulo}"></span>
+                        <span class="flex-shrink-0 text-nowrap">
+                            <form class="d-inline" method="post"
+                                  th:action="@{/equipos/{id}/tareas/{idTarea}/asignarme(id=${equipo.id},idTarea=${tarea.id})}">
+                                <button class="btn btn-outline-success btn-sm" type="submit">Cogerla</button>
+                            </form>
+                            <a class="btn btn-outline-primary btn-sm"
+                               th:href="@{/equipos/{id}/tareas/{idTarea}/editar(id=${equipo.id},idTarea=${tarea.id})}"
+                               title="Editar tarea" aria-label="Editar tarea"><svg th:replace="fragments :: iconoEditar"></svg></a>
+                            <form class="d-inline" method="post"
+                                  th:action="@{/equipos/{id}/tareas/{idTarea}/borrar(id=${equipo.id},idTarea=${tarea.id})}"
+                                  onsubmit="return confirm('¿Seguro que quieres borrar la tarea?');">
+                                <button class="btn btn-outline-danger btn-sm" type="submit"
+                                        title="Borrar tarea" aria-label="Borrar tarea"><svg th:replace="fragments :: iconoBorrar"></svg></button>
+                            </form>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
             <hr class="mt-4"/>
             <div class="d-flex justify-content-between align-items-center">
                 <a class="btn btn-link pl-0" th:href="@{/equipos}">&larr; Volver al listado</a>
