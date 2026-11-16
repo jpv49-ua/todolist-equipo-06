@@ -4,16 +4,21 @@ import madstodolist.authentication.ManagerUserSession;
 import madstodolist.controller.exception.UsuarioNoAdministradorException;
 import madstodolist.controller.exception.UsuarioNoLogeadoException;
 import madstodolist.controller.exception.UsuarioNotFoundException;
+import madstodolist.dto.PerfilData;
 import madstodolist.dto.UsuarioData;
 import madstodolist.service.UsuarioService;
+import madstodolist.service.UsuarioServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @Controller
@@ -39,10 +44,9 @@ public class UsuarioController {
         return usuario;
     }
 
-    @GetMapping("/cuenta")
-    public String cuenta(Model model) {
-
-        // Cualquier usuario logeado puede ver los datos de su propia cuenta
+    // Comprueba que hay un usuario logeado y lo devuelve.
+    // Si no hay usuario logeado se devuelve un 401
+    private UsuarioData comprobarUsuarioLogeado() {
         Long idUsuarioLogeado = managerUserSession.usuarioLogeado();
         if (idUsuarioLogeado == null)
             throw new UsuarioNoLogeadoException();
@@ -50,10 +54,62 @@ public class UsuarioController {
         UsuarioData usuario = usuarioService.findById(idUsuarioLogeado);
         if (usuario == null)
             throw new UsuarioNoLogeadoException();
+        return usuario;
+    }
+
+    @GetMapping("/cuenta")
+    public String cuenta(Model model) {
+
+        // Cualquier usuario logeado puede ver los datos de su propia cuenta
+        UsuarioData usuario = comprobarUsuarioLogeado();
 
         model.addAttribute("usuario", usuario);
         model.addAttribute("logeado", true);
         return "cuenta";
+    }
+
+    @GetMapping("/cuenta/editar")
+    public String formEditarPerfil(@ModelAttribute PerfilData perfilData, Model model) {
+
+        // Cada usuario edita su propio perfil
+        UsuarioData usuario = comprobarUsuarioLogeado();
+
+        perfilData.setEmail(usuario.getEmail());
+        perfilData.setNombre(usuario.getNombre());
+        perfilData.setFechaNacimiento(usuario.getFechaNacimiento());
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("logeado", true);
+        return "formEditarPerfil";
+    }
+
+    @PostMapping("/cuenta/editar")
+    public String grabaPerfilModificado(@Valid PerfilData perfilData, BindingResult result,
+                                        Model model, RedirectAttributes flash) {
+
+        UsuarioData usuario = comprobarUsuarioLogeado();
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("logeado", true);
+
+        if (result.hasErrors())
+            return "formEditarPerfil";
+
+        UsuarioData usuarioModificado = new UsuarioData();
+        usuarioModificado.setEmail(perfilData.getEmail());
+        usuarioModificado.setNombre(perfilData.getNombre());
+        usuarioModificado.setFechaNacimiento(perfilData.getFechaNacimiento());
+
+        try {
+            usuarioService.modificaUsuario(usuario.getId(), usuarioModificado);
+        } catch (UsuarioServiceException e) {
+            // Si los datos no son válidos, volvemos al formulario mostrando el error
+            model.addAttribute("error", e.getMessage());
+            return "formEditarPerfil";
+        }
+
+        flash.addFlashAttribute("mensaje", "Perfil modificado correctamente");
+        return "redirect:/cuenta";
     }
 
     @GetMapping("/registrados")
