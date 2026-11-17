@@ -1,6 +1,7 @@
 package madstodolist.repository;
 
 
+import madstodolist.model.EstadoTareaEnum;
 import madstodolist.model.Tarea;
 import madstodolist.model.Usuario;
 import org.junit.jupiter.api.Assertions;
@@ -110,6 +111,18 @@ public class TareaTest {
 
         assertThat(tarea1).isEqualTo(tarea3);
         assertThat(tarea1).isNotEqualTo(tarea2);
+    }
+
+    @Test
+    public void tareaConEstadoPorDefecto() {
+        // GIVEN
+        // Un usuario y una tarea en memoria
+        Usuario usuario = new Usuario("user@ua");
+        Tarea tarea = new Tarea(usuario, "Práctica 1 de MADS");
+
+        // WHEN & THEN
+        // comprobamos que tiene asignado el estado por defecto
+        assertThat(tarea.getEstado()).isEqualTo(EstadoTareaEnum.TODO);
     }
 
     //
@@ -253,5 +266,26 @@ public class TareaTest {
 
         Tarea tareaBD = tareaRepository.findById(tareaId).orElse(null);
         assertThat(tareaBD.getTitulo()).isEqualTo(tarea.getTitulo());
+    }
+
+    @Test
+    @Transactional
+    public void guardarEstadoDeTareaEnBaseDatos() {
+        // GIVEN
+        // Un usuario en la base de datos y una tarea con estado IN_PROGRESS.
+        Usuario usuario = new Usuario("user@ua");
+        usuarioRepository.save(usuario);
+
+        Tarea tarea = new Tarea(usuario, "Práctica 1 de MADS");
+        tarea.setEstado(EstadoTareaEnum.IN_PROGRESS);
+
+        // WHEN
+        // guardamos la tarea en la BD,
+        tareaRepository.save(tarea);
+
+        // THEN
+        // al recuperarla por su identificador conserva el estado.
+        Tarea tareaBD = tareaRepository.findById(tarea.getId()).orElse(null);
+        assertThat(tareaBD.getEstado()).isEqualTo(EstadoTareaEnum.IN_PROGRESS);
     }
 }

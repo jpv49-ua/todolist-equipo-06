@@ -5,6 +5,7 @@ import madstodolist.controller.exception.UsuarioNoLogeadoException;
 import madstodolist.controller.exception.TareaNotFoundException;
 import madstodolist.dto.TareaData;
 import madstodolist.dto.UsuarioData;
+import madstodolist.model.EstadoTareaEnum;
 import madstodolist.service.TareaService;
 import madstodolist.service.TareaServiceException;
 import madstodolist.service.UsuarioService;
@@ -68,6 +69,7 @@ public class TareaController {
         List<TareaData> tareas = tareaService.allTareasUsuario(idUsuario);
         model.addAttribute("usuario", usuario);
         model.addAttribute("tareas", tareas);
+        model.addAttribute("estados", EstadoTareaEnum.values());
         return "listaTareas";
     }
 
@@ -172,6 +174,21 @@ public class TareaController {
 
         tareaService.borraTarea(idTarea);
         return "";
+    }
+
+    @PostMapping("/tareas/{id}/estado")
+    public String cambiaEstadoTarea(@PathVariable(value="id") Long idTarea, @RequestParam EstadoTareaEnum estado,
+                                    RedirectAttributes flash, HttpSession session) {
+        TareaData tarea = tareaService.findById(idTarea);
+        if (tarea == null) {
+            throw new TareaNotFoundException();
+        }
+
+        comprobarUsuarioLogeado(tarea.getUsuarioId());
+
+        tareaService.cambiaEstadoTarea(idTarea, estado);
+        flash.addFlashAttribute("mensaje", "Estado de la tarea modificado correctamente");
+        return "redirect:/usuarios/" + tarea.getUsuarioId() + "/tareas";
     }
 }
 

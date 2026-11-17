@@ -1,5 +1,6 @@
 package madstodolist.service;
 
+import madstodolist.model.EstadoTareaEnum;
 import madstodolist.model.Tarea;
 import madstodolist.repository.TareaRepository;
 import madstodolist.model.Usuario;
@@ -215,6 +216,23 @@ public class TareaService {
             tarea.setUsuario(responsable);
         }
 
+        tarea = tareaRepository.save(tarea);
+        return modelMapper.map(tarea, TareaData.class);
+    }
+
+    @Transactional
+    public TareaData cambiaEstadoTarea(Long idTarea, EstadoTareaEnum nuevoEstado) {
+        logger.debug("Cambiando el estado de la tarea " + idTarea + " a " + nuevoEstado);
+
+        if (nuevoEstado == null) {
+            throw new TareaServiceException("El estado de la tarea no puede ser nulo");
+        }
+
+        Tarea tarea = tareaRepository.findById(idTarea).orElse(null);
+        if (tarea == null) {
+            throw new TareaServiceException("No existe tarea con id " + idTarea);
+        }
+        tarea.setEstado(nuevoEstado);
         tarea = tareaRepository.save(tarea);
         return modelMapper.map(tarea, TareaData.class);
     }

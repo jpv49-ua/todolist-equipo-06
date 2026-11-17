@@ -3,6 +3,7 @@ package madstodolist.controller;
 import madstodolist.authentication.ManagerUserSession;
 import madstodolist.dto.TareaData;
 import madstodolist.dto.UsuarioData;
+import madstodolist.model.EstadoTareaEnum;
 import madstodolist.service.TareaService;
 import madstodolist.service.UsuarioService;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -199,5 +201,82 @@ public class TareaWebTest {
 
         this.mockMvc.perform(get(urlListado))
                 .andExpect(content().string(containsString("Limpiar cristales coche")));
+    }
+
+    @Test
+    public void cambiarEstadoTareaActualizaElEstadoYRedirige() throws Exception {
+        // GIVEN
+        // Un usuario con dos tareas en la BD
+        Map<String, Long> ids = addUsuarioTareasBD();
+        Long usuarioId = ids.get("usuarioId");
+        Long tareaId = ids.get("tareaId");
+
+        // Ver el comentario en el primer test
+        when(managerUserSession.usuarioLogeado()).thenReturn(usuarioId);
+
+        // WHEN, THEN
+        // realizamos la petición POST para cambiar el estado de una tarea,
+        // se devuelve un REDIRECT al listado de tareas,
+        String urlEstado = "/tareas/" + tareaId + "/estado";
+        String urlRedirect = "/usuarios/" + usuarioId + "/tareas";
+
+        this.mockMvc.perform(post(urlEstado)
+                        .param("estado", "DONE"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(urlRedirect));
+
+        // y la tarea queda con el nuevo estado.
+        assertThat(tareaService.findById(tareaId).getEstado()).isEqualTo(EstadoTareaEnum.DONE);
+    }
+
+    @Test
+    public void cambiarEstadoDeTareaInexistenteDevuelveNotFound() throws Exception {
+        // GIVEN
+        // Un usuario logeado en la BD
+        Long usuarioId = addUsuarioTareasBD().get("usuarioId");
+        when(managerUserSession.usuarioLogeado()).thenReturn(usuarioId);
+
+        // WHEN, THEN
+        // la petición para cambiar el estado de una tarea que no existe devuelve NOT FOUND.
+        this.mockMvc.perform(post("/tareas/999999/estado")
+                        .param("estado", "DONE"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void cambiarEstadoConValorInvalidoDevuelveBadRequest() throws Exception {
+        // GIVEN
+        // Un usuario con dos tareas en la BD
+        Map<String, Long> ids = addUsuarioTareasBD();
+        when(managerUserSession.usuarioLogeado()).thenReturn(ids.get("usuarioId"));
+
+        // WHEN, THEN
+        // un valor de estado que no existe devuelve BAD REQUEST.
+        this.mockMvc.perform(post("/tareas/" + ids.get("tareaId") + "/estado")
+                        .param("estado", "TERMINADA"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void listaTareasMuestraElSelectorDeEstado() throws Exception {
+        // GIVEN
+        // Un usuario con dos tareas en la BD
+        Map<String, Long> ids = addUsuarioTareasBD();
+        Long usuarioId = ids.get("usuarioId");
+        Long tareaId = ids.get("tareaId");
+
+        // Ver el comentario en el primer test
+        when(managerUserSession.usuarioLogeado()).thenReturn(usuarioId);
+
+        // WHEN, THEN
+        // el listado de tareas contiene el formulario para cambiar el estado
+        // y las tres opciones disponibles.
+        this.mockMvc.perform(get("/usuarios/" + usuarioId + "/tareas"))
+                .andExpect(content().string(allOf(
+                        containsString("action=\"/tareas/" + tareaId + "/estado\""),
+                        containsString("TODO"),
+                        containsString("IN_PROGRESS"),
+                        containsString("DONE")
+                )));
     }
 }

@@ -2,6 +2,7 @@ package madstodolist.service;
 
 import madstodolist.dto.TareaData;
 import madstodolist.dto.UsuarioData;
+import madstodolist.model.EstadoTareaEnum;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -197,4 +198,48 @@ public class TareaServiceTest {
         assertThat(tarea.getComentario()).isNull();
     }
 
+    @Test
+    public void laTareaRecuperadaDelServicioTieneEstadoPorDefecto() {
+        // GIVEN
+        // Una tarea nueva en la BD,
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+
+        // WHEN
+        // la recuperamos con el servicio,
+        TareaData tarea = tareaService.findById(tareaId);
+
+        // THEN
+        // el DTO incluye el estado por defecto.
+        assertThat(tarea.getEstado()).isEqualTo(EstadoTareaEnum.TODO);
+    }
+
+    @Test
+    public void cambiaEstadoTareaActualizaElEstado() {
+        // GIVEN
+        // Una tarea en la BD con el estado por defecto,
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+
+        // WHEN
+        // se cambia su estado a DONE,
+        TareaData tareaModificada = tareaService.cambiaEstadoTarea(tareaId, EstadoTareaEnum.DONE);
+
+        // THEN
+        // el DTO devuelto y la tarea guardada tienen el nuevo estado.
+        assertThat(tareaModificada.getEstado()).isEqualTo(EstadoTareaEnum.DONE);
+        assertThat(tareaService.findById(tareaId).getEstado()).isEqualTo(EstadoTareaEnum.DONE);
+    }
+
+    @Test
+    public void cambiaEstadoDeTareaInexistenteLanzaExcepcion() {
+        assertThatThrownBy(() -> tareaService.cambiaEstadoTarea(999999L, EstadoTareaEnum.DONE))
+                .isInstanceOf(TareaServiceException.class);
+    }
+
+    @Test
+    public void cambiaEstadoConEstadoNuloLanzaExcepcion() {
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+
+        assertThatThrownBy(() -> tareaService.cambiaEstadoTarea(tareaId, null))
+                .isInstanceOf(TareaServiceException.class);
+    }
 }
