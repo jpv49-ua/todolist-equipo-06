@@ -3,6 +3,7 @@ package madstodolist.controller;
 import madstodolist.authentication.ManagerUserSession;
 import madstodolist.dto.TareaData;
 import madstodolist.dto.UsuarioData;
+import madstodolist.model.EstadoTareaEnum;
 import madstodolist.service.TareaService;
 import madstodolist.service.UsuarioService;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -199,5 +201,31 @@ public class TareaWebTest {
 
         this.mockMvc.perform(get(urlListado))
                 .andExpect(content().string(containsString("Limpiar cristales coche")));
+    }
+
+    @Test
+    public void cambiarEstadoTareaActualizaElEstadoYRedirige() throws Exception {
+        // GIVEN
+        // Un usuario con dos tareas en la BD
+        Map<String, Long> ids = addUsuarioTareasBD();
+        Long usuarioId = ids.get("usuarioId");
+        Long tareaId = ids.get("tareaId");
+
+        // Ver el comentario en el primer test
+        when(managerUserSession.usuarioLogeado()).thenReturn(usuarioId);
+
+        // WHEN, THEN
+        // realizamos la petición POST para cambiar el estado de una tarea,
+        // se devuelve un REDIRECT al listado de tareas,
+        String urlEstado = "/tareas/" + tareaId + "/estado";
+        String urlRedirect = "/usuarios/" + usuarioId + "/tareas";
+
+        this.mockMvc.perform(post(urlEstado)
+                        .param("estado", "DONE"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(urlRedirect));
+
+        // y la tarea queda con el nuevo estado.
+        assertThat(tareaService.findById(tareaId).getEstado()).isEqualTo(EstadoTareaEnum.DONE);
     }
 }
