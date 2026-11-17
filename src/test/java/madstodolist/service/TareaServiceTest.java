@@ -234,4 +234,12 @@ public class TareaServiceTest {
         assertThatThrownBy(() -> tareaService.cambiaEstadoTarea(999999L, EstadoTareaEnum.DONE))
                 .isInstanceOf(TareaServiceException.class);
     }
+
+    @Test
+    public void cambiaEstadoConEstadoNuloLanzaExcepcion() {
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+
+        assertThatThrownBy(() -> tareaService.cambiaEstadoTarea(tareaId, null))
+                .isInstanceOf(TareaServiceException.class);
+    }
 }

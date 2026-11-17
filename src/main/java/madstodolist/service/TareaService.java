@@ -223,6 +223,11 @@ public class TareaService {
     @Transactional
     public TareaData cambiaEstadoTarea(Long idTarea, EstadoTareaEnum nuevoEstado) {
         logger.debug("Cambiando el estado de la tarea " + idTarea + " a " + nuevoEstado);
+
+        if (nuevoEstado == null) {
+            throw new TareaServiceException("El estado de la tarea no puede ser nulo");
+        }
+
         Tarea tarea = tareaRepository.findById(idTarea).orElse(null);
         if (tarea == null) {
             throw new TareaServiceException("No existe tarea con id " + idTarea);
