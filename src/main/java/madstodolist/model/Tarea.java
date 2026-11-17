@@ -32,6 +32,9 @@ public class Tarea implements Serializable {
     // Comentario opcional de la tarea (como máximo uno por tarea)
     private String comentario;
 
+    // Estado de la tarea
+    private EstadoTareaEnum estado = EstadoTareaEnum.TODO;
+
     // Constructor vacío necesario para JPA/Hibernate.
     // No debe usarse desde la aplicación.
     public Tarea() {}
@@ -81,6 +84,8 @@ public class Tarea implements Serializable {
     public void setEquipo(Equipo equipo) {
         this.equipo = equipo;
     }
+
+    public EstadoTareaEnum getEstado() { return estado; }
 
     // Getters y setters de la relación muchos-a-uno con Usuario
 

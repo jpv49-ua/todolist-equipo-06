@@ -1,6 +1,7 @@
 package madstodolist.repository;
 
 
+import madstodolist.model.EstadoTareaEnum;
 import madstodolist.model.Tarea;
 import madstodolist.model.Usuario;
 import org.junit.jupiter.api.Assertions;
@@ -110,6 +111,18 @@ public class TareaTest {
 
         assertThat(tarea1).isEqualTo(tarea3);
         assertThat(tarea1).isNotEqualTo(tarea2);
+    }
+
+    @Test
+    public void tareaConEstadoPorDefecto() {
+        // GIVEN
+        // Un usuario y una tarea en memoria
+        Usuario usuario = new Usuario("user@ua");
+        Tarea tarea = new Tarea(usuario, "Práctica 1 de MADS");
+
+        // WHEN & THEN
+        // comprobamos que tiene asignado el estado por defecto
+        assertThat(tarea.getEstado()).isEqualTo(EstadoTareaEnum.TODO);
     }
 
     //
