@@ -58,11 +58,10 @@
                                     th:classappend="${tarea.estado?.name() == 'DONE'} ? 'border-success text-success'
                                         : (${tarea.estado?.name() == 'IN_PROGRESS'} ? 'border-primary text-primary'
                                         : 'border-secondary text-secondary')">
-                                <option th:each="estado : ${T(madstodolist.model.EstadoTareaEnum).values()}"
+                                <option th:each="estado : ${estados}"
                                         th:value="${estado}" th:text="${estado}"
                                         th:selected="${estado == tarea.estado}"></option>
                             </select>
-
                         </form>
                     </td>
                 </tr>
