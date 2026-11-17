@@ -23,6 +23,7 @@
                     <th>Id</th>
                     <th>Tarea</th>
                     <th>Comentario</th>
+                    <th>Estado</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -49,6 +50,20 @@
                                     title="Borrar comentario" aria-label="Borrar comentario"
                                     th:onclick="'del(\'/tareas/' + ${tarea.id} + '/comentario\', \'el comentario\')'"><svg th:replace="fragments :: iconoBorrar"></svg></button>
                         </th:block>
+                    </td>
+                    <td>
+                        <form method="post" th:action="@{/tareas/{id}/estado(id=${tarea.id})}">
+                            <select class="custom-select custom-select-sm w-auto" name="estado"
+                                    aria-label="Estado de la tarea" onchange="this.form.submit()"
+                                    th:classappend="${tarea.estado?.name() == 'DONE'} ? 'border-success text-success'
+                                        : (${tarea.estado?.name() == 'IN_PROGRESS'} ? 'border-primary text-primary'
+                                        : 'border-secondary text-secondary')">
+                                <option th:each="estado : ${T(madstodolist.model.EstadoTareaEnum).values()}"
+                                        th:value="${estado}" th:text="${estado}"
+                                        th:selected="${estado == tarea.estado}"></option>
+                            </select>
+
+                        </form>
                     </td>
                 </tr>
                 </tbody>

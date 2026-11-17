@@ -69,6 +69,7 @@ public class TareaController {
         List<TareaData> tareas = tareaService.allTareasUsuario(idUsuario);
         model.addAttribute("usuario", usuario);
         model.addAttribute("tareas", tareas);
+        model.addAttribute("estados", EstadoTareaEnum.values());
         return "listaTareas";
     }
 

@@ -256,4 +256,27 @@ public class TareaWebTest {
                         .param("estado", "TERMINADA"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    public void listaTareasMuestraElSelectorDeEstado() throws Exception {
+        // GIVEN
+        // Un usuario con dos tareas en la BD
+        Map<String, Long> ids = addUsuarioTareasBD();
+        Long usuarioId = ids.get("usuarioId");
+        Long tareaId = ids.get("tareaId");
+
+        // Ver el comentario en el primer test
+        when(managerUserSession.usuarioLogeado()).thenReturn(usuarioId);
+
+        // WHEN, THEN
+        // el listado de tareas contiene el formulario para cambiar el estado
+        // y las tres opciones disponibles.
+        this.mockMvc.perform(get("/usuarios/" + usuarioId + "/tareas"))
+                .andExpect(content().string(allOf(
+                        containsString("action=\"/tareas/" + tareaId + "/estado\""),
+                        containsString("TODO"),
+                        containsString("IN_PROGRESS"),
+                        containsString("DONE")
+                )));
+    }
 }
