@@ -1,5 +1,7 @@
 package madstodolist.dto;
 
+import madstodolist.model.EstadoTareaEnum;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -16,6 +18,7 @@ public class TareaData implements Serializable {
     private String equipoNombre;  // Nombre del equipo, para mostrarlo en las vistas
     private String usuarioNombre; // Nombre del usuario responsable
     private String usuarioEmail;  // Email del responsable (fallback si no tiene nombre)
+    private EstadoTareaEnum estado;
 
     // Getters y setters
 
@@ -81,6 +84,14 @@ public class TareaData implements Serializable {
 
     public void setUsuarioEmail(String usuarioEmail) {
         this.usuarioEmail = usuarioEmail;
+    }
+
+    public EstadoTareaEnum getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoTareaEnum estado) {
+        this.estado = estado;
     }
 
     // Sobreescribimos equals y hashCode para que dos tareas sean iguales
