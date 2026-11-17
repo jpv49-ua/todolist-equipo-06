@@ -212,4 +212,20 @@ public class TareaServiceTest {
         // el DTO incluye el estado por defecto.
         assertThat(tarea.getEstado()).isEqualTo(EstadoTareaEnum.TODO);
     }
+
+    @Test
+    public void cambiaEstadoTareaActualizaElEstado() {
+        // GIVEN
+        // Una tarea en la BD con el estado por defecto,
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+
+        // WHEN
+        // se cambia su estado a DONE,
+        TareaData tareaModificada = tareaService.cambiaEstadoTarea(tareaId, EstadoTareaEnum.DONE);
+
+        // THEN
+        // el DTO devuelto y la tarea guardada tienen el nuevo estado.
+        assertThat(tareaModificada.getEstado()).isEqualTo(EstadoTareaEnum.DONE);
+        assertThat(tareaService.findById(tareaId).getEstado()).isEqualTo(EstadoTareaEnum.DONE);
+    }
 }
