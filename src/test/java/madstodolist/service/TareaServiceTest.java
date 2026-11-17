@@ -228,4 +228,10 @@ public class TareaServiceTest {
         assertThat(tareaModificada.getEstado()).isEqualTo(EstadoTareaEnum.DONE);
         assertThat(tareaService.findById(tareaId).getEstado()).isEqualTo(EstadoTareaEnum.DONE);
     }
+
+    @Test
+    public void cambiaEstadoDeTareaInexistenteLanzaExcepcion() {
+        assertThatThrownBy(() -> tareaService.cambiaEstadoTarea(999999L, EstadoTareaEnum.DONE))
+                .isInstanceOf(TareaServiceException.class);
+    }
 }
