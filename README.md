@@ -16,6 +16,7 @@ Versión actual: **1.2.0**
 - Página de cuenta (`/cuenta`) con los datos del usuario logeado, accesible desde el desplegable del usuario.
 - Comentario en las tareas: cada tarea puede tener un comentario, que se muestra junto a ella en el listado de tareas. En el listado, la columna *Tarea* tiene los botones para editar y borrar la tarea, y la columna *Comentario* los botones para añadir, editar y borrar el comentario. El comentario se escribe en la página `/tareas/{id}`.
 - Equipos: cualquier usuario puede crear equipos, ver sus miembros y unirse o salir de ellos. El administrador puede además cambiar el nombre de un equipo y eliminarlo.
+- - Estado de las tareas: cada tarea personal tiene un estado (`TODO`, `IN_PROGRESS` o `DONE`) que se cambia con un selector en la columna *Estado* del listado de tareas.
 
 ## Requisitos
 
@@ -60,7 +61,7 @@ En los tres casos la aplicación queda disponible en [http://localhost:8080/logi
 Por defecto se usa H2. Para usar PostgreSQL hay dos perfiles:
 
 - `postgres` (`application-postgres.properties`): usa `ddl-auto=update`, así que crea las tablas solo.
-- `postgres-prod` (`application-postgres-prod.properties`): usa `ddl-auto=validate`, así que el esquema tiene que existir antes. Hay que cargar `sql/schema-1.2.0.sql` o `sql/backup11112026.sql`, y después la migración `sql/schema-1.2.0-1.3.0.sql`, que añade la columna `comentario` a la tabla `tareas`.
+- `postgres-prod` (`application-postgres-prod.properties`): usa `ddl-auto=validate`, así que el esquema tiene que existir antes. Hay que cargar `sql/schema-1.2.0.sql` o `sql/backup11112026.sql`, y después la migración `sql/schema-1.2.0-1.3.0.sql`, que adapta la tabla `tareas` a la versión 1.3.0 (añade `comentario`, `equipo_id` y `estado`)
 
 Los dos perfiles se conectan a la base de datos `mads` usando las variables `POSTGRES_HOST`, `POSTGRES_PORT`, `DB_USER` y `DB_PASSWD` (por defecto `localhost:5432`, `mads`/`mads`). Se pueden sobrescribir con variables de entorno o con argumentos (`--POSTGRES_HOST=...`). El `ENTRYPOINT` del `Dockerfile` pasa los argumentos a `java -jar`, así que `docker run ... imagen --spring.profiles.active=...` funciona.
 
@@ -162,7 +163,7 @@ Navegador ──► Controller ──► Service ──► Repository ──► 
 
 | Paquete | Responsabilidad |
 |---|---|
-| `model` | Entidades JPA `Usuario`, `Tarea` y `Equipo`. `Usuario` y `Tarea` tienen una relación uno a muchos; `Tarea` tiene además un `comentario` opcional; `Usuario` y `Equipo`, una relación muchos a muchos. `Usuario` incluye los atributos `admin` y `bloqueado`. |
+| `model` | Entidades JPA `Usuario`, `Tarea` y `Equipo`. `Usuario` y `Tarea` tienen una relación uno a muchos; `Tarea` tiene además un `comentario` opcional y un `estado` (enum `EstadoTareaEnum`: `TODO`, `IN_PROGRESS`, `DONE`); `Usuario` y `Equipo`, una relación muchos a muchos. `Usuario` incluye los atributos `admin` y `bloqueado`. |
 | `repository` | Interfaces Spring Data (`UsuarioRepository`, `TareaRepository`, `EquipoRepository`). |
 | `service` | Lógica de negocio y transacciones (`UsuarioService`, `TareaService`, `EquipoService`). Devuelve DTOs, no entidades. `InitDbService` carga los datos iniciales en el perfil `dev`. |
 | `dto` | Objetos de transferencia (`UsuarioData`, `TareaData`, `EquipoData`) y de formularios (`LoginData`, `RegistroData`). La conversión entre entidades y DTOs se hace con ModelMapper (`config/ModelMapperConfig`). |
@@ -197,6 +198,7 @@ Navegador ──► Controller ──► Service ──► Repository ──► 
 | `GET/POST /tareas/{id}/editar`, `DELETE /tareas/{id}` | Editar y borrar tarea |
 | `GET /tareas/{id}` | Formulario para añadir o editar el comentario de la tarea |
 | `POST /tareas/{id}/comentario`, `DELETE /tareas/{id}/comentario` | Guardar (añadir o sustituir) y borrar el comentario de la tarea |
+| `POST /tareas/{id}/estado` | Cambiar el estado de la tarea |
 | `GET /registrados` | Listado de usuarios (solo administrador) |
 | `GET /registrados/{id}` | Descripción de un usuario (solo administrador) |
 | `POST /registrados/{id}/bloquear`, `POST /registrados/{id}/habilitar` | Bloquear o habilitar a un usuario (solo administrador) |

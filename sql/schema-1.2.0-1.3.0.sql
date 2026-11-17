@@ -5,6 +5,7 @@
 --   1. Comentario (opcional, uno por tarea) en la tabla de tareas
 --   2. Equipo (opcional) al que pertenece una tarea
 --   3. El responsable de una tarea pasa a ser opcional
+--   4. Estado de la tarea (por defecto, TODO)
 --
 
 -- 1. Comentario de la tarea
@@ -18,3 +19,6 @@ ALTER TABLE public.tareas
 
 -- 3. El responsable de una tarea de equipo es opcional
 ALTER TABLE public.tareas ALTER COLUMN usuario_id DROP NOT NULL;
+
+-- 4. Estado de la tarea, guardado como texto. Las tareas existentes quedan en TODO
+ALTER TABLE public.tareas ADD COLUMN estado character varying(255) NOT NULL DEFAULT 'TODO';
