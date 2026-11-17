@@ -228,4 +228,32 @@ public class TareaWebTest {
         // y la tarea queda con el nuevo estado.
         assertThat(tareaService.findById(tareaId).getEstado()).isEqualTo(EstadoTareaEnum.DONE);
     }
+
+    @Test
+    public void cambiarEstadoDeTareaInexistenteDevuelveNotFound() throws Exception {
+        // GIVEN
+        // Un usuario logeado en la BD
+        Long usuarioId = addUsuarioTareasBD().get("usuarioId");
+        when(managerUserSession.usuarioLogeado()).thenReturn(usuarioId);
+
+        // WHEN, THEN
+        // la petición para cambiar el estado de una tarea que no existe devuelve NOT FOUND.
+        this.mockMvc.perform(post("/tareas/999999/estado")
+                        .param("estado", "DONE"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void cambiarEstadoConValorInvalidoDevuelveBadRequest() throws Exception {
+        // GIVEN
+        // Un usuario con dos tareas en la BD
+        Map<String, Long> ids = addUsuarioTareasBD();
+        when(managerUserSession.usuarioLogeado()).thenReturn(ids.get("usuarioId"));
+
+        // WHEN, THEN
+        // un valor de estado que no existe devuelve BAD REQUEST.
+        this.mockMvc.perform(post("/tareas/" + ids.get("tareaId") + "/estado")
+                        .param("estado", "TERMINADA"))
+                .andExpect(status().isBadRequest());
+    }
 }
