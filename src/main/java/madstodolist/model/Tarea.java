@@ -32,7 +32,8 @@ public class Tarea implements Serializable {
     // Comentario opcional de la tarea (como máximo uno por tarea)
     private String comentario;
 
-    // Estado de la tarea
+    // Estado de la tarea, guardado como texto en la BD
+    @Enumerated(EnumType.STRING)
     private EstadoTareaEnum estado = EstadoTareaEnum.TODO;
 
     // Constructor vacío necesario para JPA/Hibernate.
@@ -86,6 +87,8 @@ public class Tarea implements Serializable {
     }
 
     public EstadoTareaEnum getEstado() { return estado; }
+
+    public void setEstado(EstadoTareaEnum estado) { this.estado = estado; }
 
     // Getters y setters de la relación muchos-a-uno con Usuario
 
