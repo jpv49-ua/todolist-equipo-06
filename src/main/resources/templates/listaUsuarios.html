@@ -53,11 +53,11 @@
                         <span th:if="${!usuarioRegistrado.admin and !usuarioRegistrado.bloqueado}" class="badge badge-success">Habilitado</span>
                     </td>
                     <td>
-                        <a class="btn btn-primary btn-xs"
+                        <a class="btn btn-outline-primary btn-sm"
                            th:href="@{/registrados/{id}(id=${usuarioRegistrado.id})}">Ver descripción</a>
                         <form th:unless="${usuarioRegistrado.admin}" class="d-inline" method="post"
                               th:action="${usuarioRegistrado.bloqueado} ? @{/registrados/{id}/habilitar(id=${usuarioRegistrado.id})} : @{/registrados/{id}/bloquear(id=${usuarioRegistrado.id})}">
-                            <button type="submit" th:class="${usuarioRegistrado.bloqueado} ? 'btn btn-success btn-xs' : 'btn btn-danger btn-xs'"
+                            <button type="submit" th:class="${usuarioRegistrado.bloqueado} ? 'btn btn-outline-success btn-sm' : 'btn btn-outline-danger btn-sm'"
                                     th:text="${usuarioRegistrado.bloqueado} ? 'Habilitar' : 'Bloquear'"></button>
                         </form>
                     </td>

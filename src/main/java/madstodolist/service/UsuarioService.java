@@ -105,4 +105,30 @@ public class UsuarioService {
         usuario = usuarioRepository.save(usuario);
         return modelMapper.map(usuario, UsuarioData.class);
     }
+
+    // Modifica los datos del perfil de un usuario: email, nombre y fecha de nacimiento.
+    // El usuario debe existir, el email no puede ser vacío
+    // y no puede pertenecer ya a otro usuario.
+    // No se modifican la contraseña ni los atributos admin y bloqueado.
+    @Transactional
+    public UsuarioData modificaUsuario(Long usuarioId, UsuarioData usuarioModificado) {
+        Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+        if (usuario == null)
+            throw new UsuarioServiceException("No existe usuario con id " + usuarioId);
+
+        String email = usuarioModificado.getEmail();
+        if (email == null || email.trim().isEmpty())
+            throw new UsuarioServiceException("El email no puede estar vacío");
+
+        email = email.trim();
+        Optional<Usuario> usuarioConEseEmail = usuarioRepository.findByEmail(email);
+        if (usuarioConEseEmail.isPresent() && !usuarioConEseEmail.get().getId().equals(usuarioId))
+            throw new UsuarioServiceException("El email " + email + " ya está registrado");
+
+        usuario.setEmail(email);
+        usuario.setNombre(usuarioModificado.getNombre());
+        usuario.setFechaNacimiento(usuarioModificado.getFechaNacimiento());
+        usuario = usuarioRepository.save(usuario);
+        return modelMapper.map(usuario, UsuarioData.class);
+    }
 }

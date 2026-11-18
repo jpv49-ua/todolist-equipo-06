@@ -1,6 +1,7 @@
 package madstodolist.repository;
 
 
+import madstodolist.model.EstadoTareaEnum;
 import madstodolist.model.Tarea;
 import madstodolist.model.Usuario;
 import org.junit.jupiter.api.Assertions;
@@ -14,6 +15,9 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import madstodolist.model.Equipo;
+import madstodolist.repository.EquipoRepository;
+
 @SpringBootTest
 @Sql(scripts = "/clean-db.sql")
 public class TareaTest {
@@ -23,6 +27,9 @@ public class TareaTest {
 
     @Autowired
     TareaRepository tareaRepository;
+
+    @Autowired
+    private EquipoRepository equipoRepository;
 
     //
     // Tests modelo Tarea en memoria, sin la conexión con la BD
@@ -106,6 +113,18 @@ public class TareaTest {
         assertThat(tarea1).isNotEqualTo(tarea2);
     }
 
+    @Test
+    public void tareaConEstadoPorDefecto() {
+        // GIVEN
+        // Un usuario y una tarea en memoria
+        Usuario usuario = new Usuario("user@ua");
+        Tarea tarea = new Tarea(usuario, "Práctica 1 de MADS");
+
+        // WHEN & THEN
+        // comprobamos que tiene asignado el estado por defecto
+        assertThat(tarea.getEstado()).isEqualTo(EstadoTareaEnum.TODO);
+    }
+
     //
     // Tests TareaRepository.
     // El código que trabaja con repositorios debe
@@ -147,20 +166,23 @@ public class TareaTest {
 
     @Test
     @Transactional
-    public void salvarTareaEnBaseDatosConUsuarioNoBDLanzaExcepcion() {
+    public void salvarTareaDeEquipoSinResponsableEsPosible() {
         // GIVEN
-        // Un usuario nuevo que no está en la BD
-        // y una tarea asociada a ese usuario,
+        // Un equipo en la base de datos
+        Equipo equipo = new Equipo("Equipo A");
+        equipoRepository.save(equipo);
 
-        Usuario usuario = new Usuario("juan.gutierrez@gmail.com");
-        Tarea tarea = new Tarea(usuario, "Práctica 1 de MADS");
+        // WHEN
+        // salvamos una tarea de ese equipo sin responsable asignado
+        Tarea tarea = new Tarea(equipo, "Cortar la cebolla");
+        tareaRepository.save(tarea);
 
-        // WHEN // THEN
-        // se lanza una excepción al intentar salvar la tarea en la BD
-
-        Assertions.assertThrows(Exception.class, () -> {
-            tareaRepository.save(tarea);
-        });
+        // THEN
+        // la tarea se guarda correctamente y no tiene responsable
+        Tarea tareaBD = tareaRepository.findById(tarea.getId()).orElse(null);
+        assertThat(tareaBD).isNotNull();
+        assertThat(tareaBD.getUsuario()).isNull();
+        assertThat(tareaBD.getEquipo()).isEqualTo(equipo);
     }
 
     @Test
@@ -244,5 +266,26 @@ public class TareaTest {
 
         Tarea tareaBD = tareaRepository.findById(tareaId).orElse(null);
         assertThat(tareaBD.getTitulo()).isEqualTo(tarea.getTitulo());
+    }
+
+    @Test
+    @Transactional
+    public void guardarEstadoDeTareaEnBaseDatos() {
+        // GIVEN
+        // Un usuario en la base de datos y una tarea con estado IN_PROGRESS.
+        Usuario usuario = new Usuario("user@ua");
+        usuarioRepository.save(usuario);
+
+        Tarea tarea = new Tarea(usuario, "Práctica 1 de MADS");
+        tarea.setEstado(EstadoTareaEnum.IN_PROGRESS);
+
+        // WHEN
+        // guardamos la tarea en la BD,
+        tareaRepository.save(tarea);
+
+        // THEN
+        // al recuperarla por su identificador conserva el estado.
+        Tarea tareaBD = tareaRepository.findById(tarea.getId()).orElse(null);
+        assertThat(tareaBD.getEstado()).isEqualTo(EstadoTareaEnum.IN_PROGRESS);
     }
 }

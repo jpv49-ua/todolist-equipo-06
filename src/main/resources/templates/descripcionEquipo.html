@@ -11,22 +11,17 @@
 
     <div class="row mt-3">
         <div class="col">
-            <h2 th:text="'Equipo ' + ${equipo.nombre}"></h2>
-            <form class="d-inline" method="post" th:if="${esMiembro}"
-                  th:action="@{/equipos/{id}/salir(id=${equipo.id})}">
-                <button class="btn btn-danger" type="submit">Salir del equipo</button>
-            </form>
-            <form class="d-inline" method="post" th:unless="${esMiembro}"
-                  th:action="@{/equipos/{id}/unirse(id=${equipo.id})}">
-                <button class="btn btn-success" type="submit">Unirme al equipo</button>
-            </form>
-            <a class="btn btn-warning" th:if="${usuario.admin}"
-               th:href="@{/equipos/{id}/editar(id=${equipo.id})}">Editar equipo</a>
-            <form class="d-inline" method="post" th:if="${usuario.admin}"
-                  th:action="@{/equipos/{id}/eliminar(id=${equipo.id})}"
-                  onsubmit="return confirm('¿Estás seguro/a de que quieres eliminar el equipo?');">
-                <button class="btn btn-danger" type="submit">Eliminar equipo</button>
-            </form>
+            <div class="d-flex justify-content-between align-items-start">
+                <h2 class="mb-0" th:text="'Equipo ' + ${equipo.nombre}"></h2>
+                <div class="text-nowrap">
+                    <form class="d-inline" method="post" th:unless="${esMiembro}"
+                          th:action="@{/equipos/{id}/unirse(id=${equipo.id})}">
+                        <button class="btn btn-success" type="submit">Unirme al equipo</button>
+                    </form>
+                    <a class="btn btn-outline-primary" th:if="${usuario.admin}"
+                       th:href="@{/equipos/{id}/editar(id=${equipo.id})}"><svg th:replace="fragments :: iconoEditar"></svg> Editar equipo</a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -47,27 +42,113 @@
         </div>
     </div>
 
-    <div class="row mt-3">
+    <div class="row mt-4">
         <div class="col">
-            <h4>Miembros</h4>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4 class="mb-0">Miembros</h4>
+                <a class="btn btn-outline-primary btn-sm" th:if="${esMiembro}"
+                   th:href="@{/equipos/{id}/tareas/nueva(id=${equipo.id})}">+ Nueva tarea</a>
+            </div>
+
             <p th:if="${#lists.isEmpty(miembros)}">Este equipo todavía no tiene miembros.</p>
+
             <table class="table table-striped" th:unless="${#lists.isEmpty(miembros)}">
                 <thead>
                 <tr>
-                    <th>Id</th>
                     <th>Nombre</th>
                     <th>Email</th>
+                    <th th:if="${esMiembro}" style="width: 45%;">Tareas</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="miembro: ${miembros}">
-                    <td th:text="${miembro.id}"></td>
-                    <td th:text="${miembro.nombre}"></td>
+                    <td>
+                        <span th:text="${miembro.nombre} ?: '—'"></span>
+                        <span th:if="${miembro.id.equals(usuario.id)}" class="text-muted">(tú)</span>
+                        <span class="badge badge-secondary ml-1"
+                              th:if="${esMiembro and tareasPorMiembro.containsKey(miembro.id)}"
+                              th:text="${#lists.size(tareasPorMiembro.get(miembro.id))}"></span>
+                    </td>
                     <td th:text="${miembro.email}"></td>
+                    <td th:if="${esMiembro}">
+                        <span class="text-muted"
+                              th:unless="${tareasPorMiembro.containsKey(miembro.id)}">Sin tareas</span>
+                        <ul class="list-unstyled mb-0" th:if="${tareasPorMiembro.containsKey(miembro.id)}">
+                            <li class="d-flex align-items-start justify-content-between py-1 border-bottom"
+                                th:each="tarea, iter: ${tareasPorMiembro.get(miembro.id)}"
+                                th:classappend="${iter.last} ? 'border-bottom-0'">
+                                <span class="mr-2" style="word-break: break-word;"
+                                      th:text="${tarea.titulo}"></span>
+                                <span class="flex-shrink-0 text-nowrap">
+                                    <a class="btn btn-outline-primary btn-sm"
+                                       th:href="@{/equipos/{id}/tareas/{idTarea}/editar(id=${equipo.id},idTarea=${tarea.id})}"
+                                       title="Editar tarea" aria-label="Editar tarea"><svg th:replace="fragments :: iconoEditar"></svg></a>
+                                    <form class="d-inline" method="post"
+                                          th:action="@{/equipos/{id}/tareas/{idTarea}/borrar(id=${equipo.id},idTarea=${tarea.id})}"
+                                          onsubmit="return confirm('¿Seguro que quieres borrar la tarea?');">
+                                        <button class="btn btn-outline-danger btn-sm" type="submit"
+                                                title="Borrar tarea" aria-label="Borrar tarea"><svg th:replace="fragments :: iconoBorrar"></svg></button>
+                                    </form>
+                                </span>
+                            </li>
+                        </ul>
+                    </td>
                 </tr>
                 </tbody>
             </table>
-            <a class="btn btn-link" th:href="@{/equipos}">Volver al listado</a>
+
+            <div th:if="${esMiembro}">
+                <hr class="my-4"/>
+
+                <h5 class="mb-3">
+                    Tareas sin asignar
+                    <span class="badge badge-warning ml-1"
+                          th:if="${!#lists.isEmpty(tareasSinAsignar)}"
+                          th:text="${#lists.size(tareasSinAsignar)}"></span>
+                </h5>
+
+                <p class="text-muted" th:if="${#lists.isEmpty(tareasSinAsignar)}">
+                    No hay tareas pendientes de asignar.</p>
+
+                <ul class="list-group" th:unless="${#lists.isEmpty(tareasSinAsignar)}">
+                    <li class="list-group-item d-flex justify-content-between align-items-center"
+                        th:each="tarea: ${tareasSinAsignar}">
+                        <span class="mr-2" style="word-break: break-word;" th:text="${tarea.titulo}"></span>
+                        <span class="flex-shrink-0 text-nowrap">
+                            <form class="d-inline" method="post"
+                                  th:action="@{/equipos/{id}/tareas/{idTarea}/asignarme(id=${equipo.id},idTarea=${tarea.id})}">
+                                <button class="btn btn-outline-success btn-sm" type="submit">Cogerla</button>
+                            </form>
+                            <a class="btn btn-outline-primary btn-sm"
+                               th:href="@{/equipos/{id}/tareas/{idTarea}/editar(id=${equipo.id},idTarea=${tarea.id})}"
+                               title="Editar tarea" aria-label="Editar tarea"><svg th:replace="fragments :: iconoEditar"></svg></a>
+                            <form class="d-inline" method="post"
+                                  th:action="@{/equipos/{id}/tareas/{idTarea}/borrar(id=${equipo.id},idTarea=${tarea.id})}"
+                                  onsubmit="return confirm('¿Seguro que quieres borrar la tarea?');">
+                                <button class="btn btn-outline-danger btn-sm" type="submit"
+                                        title="Borrar tarea" aria-label="Borrar tarea"><svg th:replace="fragments :: iconoBorrar"></svg></button>
+                            </form>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+            <hr class="mt-4"/>
+            <div class="d-flex justify-content-between align-items-center">
+                <a class="btn btn-link pl-0" th:href="@{/equipos}">&larr; Volver al listado</a>
+                <div class="text-nowrap">
+                    <form class="d-inline" method="post" th:if="${esMiembro}"
+                          th:action="@{/equipos/{id}/salir(id=${equipo.id})}"
+                          onsubmit="return confirm('¿Seguro que quieres salir del equipo?');">
+                        <button class="btn btn-outline-danger btn-sm" type="submit">Salir del equipo</button>
+                    </form>
+                    <form class="d-inline" method="post" th:if="${usuario.admin}"
+                          th:action="@{/equipos/{id}/eliminar(id=${equipo.id})}"
+                          onsubmit="return confirm('¿Estás seguro/a de que quieres eliminar el equipo?');">
+                        <button class="btn btn-outline-danger btn-sm" type="submit"><svg th:replace="fragments :: iconoBorrar"></svg> Eliminar equipo</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>

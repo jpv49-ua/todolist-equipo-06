@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -358,6 +361,119 @@ public class UsuarioServiceTest {
 
         Assertions.assertThrows(UsuarioServiceException.class, () -> {
             usuarioService.setBloqueoUsuario(usuarioId + 1000L, true);
+        });
+    }
+
+    @Test
+    public void servicioModificaPerfilUsuario() {
+        // GIVEN
+        // Un usuario en la BD
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN
+        // modificamos su email, su nombre y su fecha de nacimiento
+
+        UsuarioData modificado = new UsuarioData();
+        modificado.setEmail("nuevo@ua");
+        modificado.setNombre("Usuario Modificado");
+        modificado.setFechaNacimiento(Date.from(
+                LocalDate.of(2000, 1, 15).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        UsuarioData resultado = usuarioService.modificaUsuario(usuarioId, modificado);
+
+        // THEN
+        // los datos quedan actualizados en la BD y la contraseña no cambia
+
+        assertThat(resultado.getId()).isEqualTo(usuarioId);
+        assertThat(resultado.getEmail()).isEqualTo("nuevo@ua");
+
+        UsuarioData usuarioBD = usuarioService.findById(usuarioId);
+        assertThat(usuarioBD.getEmail()).isEqualTo("nuevo@ua");
+        assertThat(usuarioBD.getNombre()).isEqualTo("Usuario Modificado");
+        assertThat(usuarioBD.getFechaNacimiento()).isNotNull();
+        assertThat(usuarioService.login("nuevo@ua", "123")).isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+    }
+
+    @Test
+    public void servicioModificaPerfilConEmailRepetidoLanzaExcepcion() {
+        // GIVEN
+        // Dos usuarios en la BD
+
+        Long usuarioId = addUsuarioBD();
+
+        UsuarioData otro = new UsuarioData();
+        otro.setEmail("otro@ua");
+        otro.setPassword("456");
+        usuarioService.registrar(otro);
+
+        // WHEN, THEN
+        // si intentamos poner el email del otro usuario se produce una excepción
+        // y los datos no cambian
+
+        UsuarioData modificado = new UsuarioData();
+        modificado.setEmail("otro@ua");
+        modificado.setNombre("Usuario Modificado");
+
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.modificaUsuario(usuarioId, modificado);
+        });
+        assertThat(usuarioService.findById(usuarioId).getEmail()).isEqualTo("user@ua");
+    }
+
+    @Test
+    public void servicioModificaPerfilManteniendoSuPropioEmail() {
+        // GIVEN
+        // Un usuario en la BD
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN
+        // modificamos solo el nombre, dejando el mismo email
+
+        UsuarioData modificado = new UsuarioData();
+        modificado.setEmail("user@ua");
+        modificado.setNombre("Otro Nombre");
+        usuarioService.modificaUsuario(usuarioId, modificado);
+
+        // THEN
+        // el nombre se actualiza sin que el email duplicado dé error
+
+        assertThat(usuarioService.findById(usuarioId).getNombre()).isEqualTo("Otro Nombre");
+    }
+
+    @Test
+    public void servicioModificaPerfilConEmailVacioLanzaExcepcion() {
+        // GIVEN
+        // Un usuario en la BD
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN, THEN
+        // si intentamos dejar el email vacío se produce una excepción
+
+        UsuarioData modificado = new UsuarioData();
+        modificado.setEmail("   ");
+
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.modificaUsuario(usuarioId, modificado);
+        });
+    }
+
+    @Test
+    public void servicioModificaPerfilDeUsuarioInexistenteLanzaExcepcion() {
+        // GIVEN
+        // Un usuario en la BD
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN, THEN
+        // si intentamos modificar un usuario que no existe se produce una excepción
+
+        UsuarioData modificado = new UsuarioData();
+        modificado.setEmail("nuevo@ua");
+
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.modificaUsuario(usuarioId + 1000L, modificado);
         });
     }
 }

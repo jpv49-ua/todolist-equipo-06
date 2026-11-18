@@ -126,6 +126,24 @@ public class EquipoService {
     }
 
     @Transactional(readOnly = true)
+    public boolean esMiembroDeEquipo(Long equipoId, Long usuarioId) {
+
+        Equipo equipo = equipoRepository.findById(equipoId).orElse(null);
+        if(equipo == null) {
+
+            throw new EquipoServiceException("Equipo " + equipoId + " no existe");
+        }
+
+        Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+        if(usuario == null) {
+
+            throw new EquipoServiceException("Usuario " + usuarioId + " no existe");
+        }
+
+        return equipo.getUsuarios().contains(usuario);
+    }
+
+    @Transactional(readOnly = true)
     public List<EquipoData> equiposUsuario(Long id) {
         Usuario usuario = usuarioRepository.findById(id).orElse(null);
         if (usuario == null) {

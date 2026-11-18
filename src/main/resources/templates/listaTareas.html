@@ -22,21 +22,52 @@
                 <tr>
                     <th>Id</th>
                     <th>Tarea</th>
-                    <th>Acción</th>
+                    <th>Comentario</th>
+                    <th>Estado</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="tarea: ${tareas}">
                     <td th:text="${tarea.id}"></td>
-                    <td th:text="${tarea.titulo}"></td>
-                    <td><a class="btn btn-primary btn-xs" th:href="@{/tareas/{id}/editar(id=${tarea.id})}"/>editar</a>
-                        <button class="btn btn-danger btn-xs" onmouseover="" style="cursor: pointer;"
-                           th:onclick="'del(\'/tareas/' + ${tarea.id} + '\')'">borrar</button>
+                    <td>
+                        <span th:text="${tarea.titulo}"></span>
+                        <a class="btn btn-outline-primary btn-sm ml-2" th:href="@{/tareas/{id}/editar(id=${tarea.id})}"
+                           title="Editar tarea" aria-label="Editar tarea"><svg th:replace="fragments :: iconoEditar"></svg></a>
+                        <button class="btn btn-outline-danger btn-sm" onmouseover="" style="cursor: pointer;"
+                                title="Borrar tarea" aria-label="Borrar tarea"
+                                th:onclick="'del(\'/tareas/' + ${tarea.id} + '\', \'la tarea\')'"><svg th:replace="fragments :: iconoBorrar"></svg></button>
+                    </td>
+                    <td>
+                        <!-- Sin comentario: solo se puede añadir -->
+                        <a th:if="${#strings.isEmpty(tarea.comentario)}" class="btn btn-outline-primary btn-sm"
+                           th:href="@{/tareas/{id}(id=${tarea.id})}">añadir comentario</a>
+                        <!-- Con comentario: se muestra y se puede editar o borrar -->
+                        <th:block th:unless="${#strings.isEmpty(tarea.comentario)}">
+                            <span th:text="${tarea.comentario}"></span>
+                            <a class="btn btn-outline-primary btn-sm ml-2" th:href="@{/tareas/{id}(id=${tarea.id})}"
+                               title="Editar comentario" aria-label="Editar comentario"><svg th:replace="fragments :: iconoEditar"></svg></a>
+                            <button class="btn btn-outline-danger btn-sm" onmouseover="" style="cursor: pointer;"
+                                    title="Borrar comentario" aria-label="Borrar comentario"
+                                    th:onclick="'del(\'/tareas/' + ${tarea.id} + '/comentario\', \'el comentario\')'"><svg th:replace="fragments :: iconoBorrar"></svg></button>
+                        </th:block>
+                    </td>
+                    <td>
+                        <form method="post" th:action="@{/tareas/{id}/estado(id=${tarea.id})}">
+                            <select class="custom-select custom-select-sm w-auto" name="estado"
+                                    aria-label="Estado de la tarea" onchange="this.form.submit()"
+                                    th:classappend="${tarea.estado?.name() == 'DONE'} ? 'border-success text-success'
+                                        : (${tarea.estado?.name() == 'IN_PROGRESS'} ? 'border-primary text-primary'
+                                        : 'border-secondary text-secondary')">
+                                <option th:each="estado : ${estados}"
+                                        th:value="${estado}" th:text="${estado}"
+                                        th:selected="${estado == tarea.estado}"></option>
+                            </select>
+                        </form>
                     </td>
                 </tr>
                 </tbody>
             </table>
-            <p><a class="btn btn-primary" th:href="@{/usuarios/{id}/tareas/nueva(id=${usuario.id})}"> Nueva tarea</a>
+            <p><a class="btn btn-outline-primary" th:href="@{/usuarios/{id}/tareas/nueva(id=${usuario.id})}"> Nueva tarea</a>
             <a class="btn btn-link" href="/logout">Salir</a></p>
         </div>
     </div>
@@ -57,10 +88,10 @@
 
 <div th:replace="fragments::javascript"/>
 
-<!-- Lanzamos una petición DELETE por JavaScript para borrar una tarea -->
+<!-- Lanzamos una petición DELETE por JavaScript para borrar una tarea o su comentario -->
 <script type="text/javascript">
-    function del(urlBorrar) {
-        if (confirm('¿Estás seguro/a de que quieres borrar la tarea?')) {
+    function del(urlBorrar, elemento) {
+        if (confirm('¿Estás seguro/a de que quieres borrar ' + elemento + '?')) {
             fetch(urlBorrar, {
                 method: 'DELETE'
             }).then((res) => location.reload());

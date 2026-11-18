@@ -1,5 +1,7 @@
 package madstodolist.dto;
 
+import madstodolist.model.EstadoTareaEnum;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -11,6 +13,12 @@ public class TareaData implements Serializable {
     private Long id;
     private String titulo;
     private Long usuarioId;  // Esta es la ID del usuario asociado
+    private String comentario;
+    private Long equipoId;        // ID del equipo al que pertenece la tarea (null si es personal)
+    private String equipoNombre;  // Nombre del equipo, para mostrarlo en las vistas
+    private String usuarioNombre; // Nombre del usuario responsable
+    private String usuarioEmail;  // Email del responsable (fallback si no tiene nombre)
+    private EstadoTareaEnum estado;
 
     // Getters y setters
 
@@ -36,6 +44,54 @@ public class TareaData implements Serializable {
 
     public void setUsuarioId(Long usuarioId) {
         this.usuarioId = usuarioId;
+    }
+
+    public String getComentario() {
+        return comentario;
+    }
+
+    public void setComentario(String comentario) {
+        this.comentario = comentario;
+    }
+
+    public Long getEquipoId() {
+        return equipoId;
+    }
+
+    public void setEquipoId(Long equipoId) {
+        this.equipoId = equipoId;
+    }
+
+    public String getEquipoNombre() {
+        return equipoNombre;
+    }
+
+    public void setEquipoNombre(String equipoNombre) {
+        this.equipoNombre = equipoNombre;
+    }
+
+    public String getUsuarioNombre() {
+        return usuarioNombre;
+    }
+
+    public void setUsuarioNombre(String usuarioNombre) {
+        this.usuarioNombre = usuarioNombre;
+    }
+
+    public String getUsuarioEmail() {
+        return usuarioEmail;
+    }
+
+    public void setUsuarioEmail(String usuarioEmail) {
+        this.usuarioEmail = usuarioEmail;
+    }
+
+    public EstadoTareaEnum getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoTareaEnum estado) {
+        this.estado = estado;
     }
 
     // Sobreescribimos equals y hashCode para que dos tareas sean iguales

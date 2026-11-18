@@ -2,6 +2,7 @@ package madstodolist.service;
 
 import madstodolist.dto.TareaData;
 import madstodolist.dto.UsuarioData;
+import madstodolist.model.EstadoTareaEnum;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 // Hemos eliminado todos los @Transactional de los tests
 // y usado un script para limpiar la BD de test después de
@@ -147,4 +149,97 @@ public class TareaServiceTest {
         assertThat(tareaService.usuarioContieneTarea(usuarioId,tareaId)).isTrue();
     }
 
+    @Test
+    public void guardaComentarioAñadeYSustituyeElComentario() {
+        // GIVEN
+        // Una tarea sin comentario en la BD,
+
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+        assertThat(tareaService.findById(tareaId).getComentario()).isNull();
+
+        // WHEN
+        // se guarda un comentario y después otro,
+
+        tareaService.guardaComentario(tareaId, "Comprar jabón");
+        tareaService.guardaComentario(tareaId, "Ir al túnel de lavado");
+
+        // THEN
+        // la tarea solo tiene el último comentario.
+
+        assertThat(tareaService.findById(tareaId).getComentario()).isEqualTo("Ir al túnel de lavado");
+    }
+
+    @Test
+    public void guardaComentarioVacioLanzaExcepcion() {
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+
+        assertThatThrownBy(() -> tareaService.guardaComentario(tareaId, "   "))
+                .isInstanceOf(TareaServiceException.class);
+    }
+
+    @Test
+    public void borraComentarioDejaLaTareaSinComentario() {
+        // GIVEN
+        // Una tarea con comentario en la BD,
+
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+        tareaService.guardaComentario(tareaId, "Comprar jabón");
+
+        // WHEN
+        // se borra el comentario,
+
+        tareaService.borraComentario(tareaId);
+
+        // THEN
+        // la tarea sigue existiendo pero ya no tiene comentario.
+
+        TareaData tarea = tareaService.findById(tareaId);
+        assertThat(tarea).isNotNull();
+        assertThat(tarea.getComentario()).isNull();
+    }
+
+    @Test
+    public void laTareaRecuperadaDelServicioTieneEstadoPorDefecto() {
+        // GIVEN
+        // Una tarea nueva en la BD,
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+
+        // WHEN
+        // la recuperamos con el servicio,
+        TareaData tarea = tareaService.findById(tareaId);
+
+        // THEN
+        // el DTO incluye el estado por defecto.
+        assertThat(tarea.getEstado()).isEqualTo(EstadoTareaEnum.TODO);
+    }
+
+    @Test
+    public void cambiaEstadoTareaActualizaElEstado() {
+        // GIVEN
+        // Una tarea en la BD con el estado por defecto,
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+
+        // WHEN
+        // se cambia su estado a DONE,
+        TareaData tareaModificada = tareaService.cambiaEstadoTarea(tareaId, EstadoTareaEnum.DONE);
+
+        // THEN
+        // el DTO devuelto y la tarea guardada tienen el nuevo estado.
+        assertThat(tareaModificada.getEstado()).isEqualTo(EstadoTareaEnum.DONE);
+        assertThat(tareaService.findById(tareaId).getEstado()).isEqualTo(EstadoTareaEnum.DONE);
+    }
+
+    @Test
+    public void cambiaEstadoDeTareaInexistenteLanzaExcepcion() {
+        assertThatThrownBy(() -> tareaService.cambiaEstadoTarea(999999L, EstadoTareaEnum.DONE))
+                .isInstanceOf(TareaServiceException.class);
+    }
+
+    @Test
+    public void cambiaEstadoConEstadoNuloLanzaExcepcion() {
+        Long tareaId = addUsuarioTareasBD().get("tareaId");
+
+        assertThatThrownBy(() -> tareaService.cambiaEstadoTarea(tareaId, null))
+                .isInstanceOf(TareaServiceException.class);
+    }
 }
