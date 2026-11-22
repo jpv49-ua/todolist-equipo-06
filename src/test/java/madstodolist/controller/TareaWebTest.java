@@ -274,9 +274,9 @@ public class TareaWebTest {
         this.mockMvc.perform(get("/usuarios/" + usuarioId + "/tareas"))
                 .andExpect(content().string(allOf(
                         containsString("action=\"/tareas/" + tareaId + "/estado\""),
-                        containsString("TODO"),
-                        containsString("IN_PROGRESS"),
-                        containsString("DONE")
+                        containsString("Por hacer"),
+                        containsString("En progreso"),
+                        containsString("Hecha")
                 )));
     }
 }
