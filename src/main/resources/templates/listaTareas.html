@@ -59,7 +59,7 @@
                                         : (${tarea.estado?.name() == 'IN_PROGRESS'} ? 'border-primary text-primary'
                                         : 'border-secondary text-secondary')">
                                 <option th:each="estado : ${estados}"
-                                        th:value="${estado}" th:text="${estado}"
+                                        th:value="${estado}" th:text="${estado.descripcion}"
                                         th:selected="${estado == tarea.estado}"></option>
                             </select>
                         </form>

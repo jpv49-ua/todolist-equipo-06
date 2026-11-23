@@ -114,6 +114,13 @@ public class TareaTest {
     }
 
     @Test
+    public void cadaEstadoTieneSuDescripcionEnEspañol() {
+        assertThat(EstadoTareaEnum.TODO.getDescripcion()).isEqualTo("Por hacer");
+        assertThat(EstadoTareaEnum.IN_PROGRESS.getDescripcion()).isEqualTo("En progreso");
+        assertThat(EstadoTareaEnum.DONE.getDescripcion()).isEqualTo("Hecha");
+    }
+
+    @Test
     public void tareaConEstadoPorDefecto() {
         // GIVEN
         // Un usuario y una tarea en memoria
