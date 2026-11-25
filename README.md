@@ -218,5 +218,6 @@ Las plantillas Thymeleaf están en `src/main/resources/templates`. `fragments.ht
 
 ## Enlaces
 
-- [Tablero Trello](https://trello.com/b/OrjZJEnF/mads)
+- [Tablero Trello](https://trello.com/b/fCOcYYIh/todolist-grupal-mads)
+- [Tablero GitHub](https://github.com/users/jpv49-ua/projects/9/views/1)
 - [Repositorio GitHub](https://github.com/jpv49-ua/todolist-equipo-06)
