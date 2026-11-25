@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -68,6 +69,25 @@ public class ListadoUsuariosWebTest {
                         containsString("Listado de usuarios registrados"),
                         containsString("user@ua"),
                         containsString("ana.garcia@gmail.com")
+                )));
+    }
+
+    @Test
+    public void listadoUsuariosMuestraRolYEstado() throws Exception {
+        // GIVEN
+        // Un administrador y un usuario normal, con el administrador logeado
+        Long usuarioId = addUsuariosBD();
+        when(managerUserSession.usuarioLogeado()).thenReturn(usuarioId);
+
+        // WHEN, THEN
+        // el listado contiene la columna de rol con el rol de cada usuario,
+        // y el estado de ambos es habilitado
+        this.mockMvc.perform(get("/registrados"))
+                .andExpect(content().string(allOf(
+                        containsString("<th>Rol</th>"),
+                        containsString("<span class=\"badge badge-info\">Administrador</span>"),
+                        containsString("<span class=\"badge badge-secondary\">Usuario</span>"),
+                        stringContainsInOrder("badge-success\">Habilitado", "badge-success\">Habilitado")
                 )));
     }
 

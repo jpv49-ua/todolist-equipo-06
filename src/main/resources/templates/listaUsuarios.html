@@ -39,6 +39,7 @@
                 <tr>
                     <th>Id</th>
                     <th>Email</th>
+                    <th>Rol</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
@@ -49,8 +50,11 @@
                     <td th:text="${usuarioRegistrado.email}"></td>
                     <td>
                         <span th:if="${usuarioRegistrado.admin}" class="badge badge-info">Administrador</span>
-                        <span th:if="${!usuarioRegistrado.admin and usuarioRegistrado.bloqueado}" class="badge badge-danger">Bloqueado</span>
-                        <span th:if="${!usuarioRegistrado.admin and !usuarioRegistrado.bloqueado}" class="badge badge-success">Habilitado</span>
+                        <span th:unless="${usuarioRegistrado.admin}" class="badge badge-secondary">Usuario</span>
+                    </td>
+                    <td>
+                        <span th:if="${usuarioRegistrado.bloqueado}" class="badge badge-danger">Bloqueado</span>
+                        <span th:unless="${usuarioRegistrado.bloqueado}" class="badge badge-success">Habilitado</span>
                     </td>
                     <td>
                         <a class="btn btn-outline-primary btn-sm"
