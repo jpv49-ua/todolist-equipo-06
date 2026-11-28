@@ -19,7 +19,10 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -95,5 +98,36 @@ public class CambiarPasswordWebTest {
             assertThat(input).doesNotContainPattern("value=\"[^\"]+\"");
         }
         assertThat(html).doesNotContain("12345678");
+    }
+
+    @Test
+    public void cambiarPasswordCorrectamenteRedirigeACuenta() throws Exception {
+        // GIVEN
+        // Un usuario logeado con la contraseña "12345678"
+
+        usuarioLogeadoBD("ana.garcia@gmail.com", "12345678");
+
+        // WHEN
+        // enviamos el formulario con la contraseña actual correcta
+        // y la nueva repetida correctamente,
+
+        this.mockMvc.perform(post("/cuenta/contrasena")
+                        .param("passwordActual", "12345678")
+                        .param("passwordNueva", "nueva456")
+                        .param("passwordNuevaRepetida", "nueva456"))
+
+        // THEN
+        // se redirige a la página de cuenta con un mensaje de confirmación
+
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/cuenta"))
+                .andExpect(flash().attribute("mensaje", "Contraseña modificada correctamente"));
+
+        // y se puede hacer login con la nueva contraseña y no con la antigua.
+
+        assertThat(usuarioService.login("ana.garcia@gmail.com", "nueva456"))
+                .isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+        assertThat(usuarioService.login("ana.garcia@gmail.com", "12345678"))
+                .isEqualTo(UsuarioService.LoginStatus.ERROR_PASSWORD);
     }
 }
