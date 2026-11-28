@@ -133,13 +133,15 @@ public class UsuarioService {
     }
 
     // Cambia la contraseña de un usuario.
-    // La contraseña actual indicada debe ser la correcta,
+    // El usuario debe existir, la contraseña actual indicada debe ser la correcta,
     // la nueva no puede estar vacía (se guarda tal cual, sin recortar)
     // y no puede ser igual a la actual.
     // No se modifica ningún otro dato del usuario.
     @Transactional
     public UsuarioData cambiaPassword(Long usuarioId, String passwordActual, String passwordNueva) {
         Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+        if (usuario == null)
+            throw new UsuarioServiceException("No existe usuario con id " + usuarioId);
         if (!usuario.getPassword().equals(passwordActual))
             throw new UsuarioServiceException("La contraseña actual no es correcta");
         if (passwordNueva == null || passwordNueva.trim().isEmpty())
