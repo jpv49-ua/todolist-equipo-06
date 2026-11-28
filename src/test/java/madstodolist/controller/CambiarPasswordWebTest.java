@@ -165,4 +165,38 @@ public class CambiarPasswordWebTest {
         assertThat(usuarioService.login("ana.garcia@gmail.com", "12345678"))
                 .isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
     }
+
+    @Test
+    public void cambiarPasswordConRepeticionQueNoCoincideMuestraError() throws Exception {
+        // GIVEN
+        // Un usuario logeado con la contraseña "12345678"
+
+        usuarioLogeadoBD("ana.garcia@gmail.com", "12345678");
+
+        // WHEN
+        // enviamos el formulario con la actual correcta,
+        // pero la nueva y su repetición no coinciden,
+
+        this.mockMvc.perform(post("/cuenta/contrasena")
+                        .param("passwordActual", "12345678")
+                        .param("passwordNueva", "nueva456")
+                        .param("passwordNuevaRepetida", "otra789"))
+
+        // THEN
+        // se vuelve al formulario mostrando el error
+
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("alert-danger"),
+                        containsString("Las contraseñas nuevas no coinciden"),
+                        containsString("action=\"/cuenta/contrasena\""))));
+
+        // y la contraseña no se modifica: el login con la antigua sigue funcionando
+        // y con la nueva no.
+
+        assertThat(usuarioService.login("ana.garcia@gmail.com", "12345678"))
+                .isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+        assertThat(usuarioService.login("ana.garcia@gmail.com", "nueva456"))
+                .isEqualTo(UsuarioService.LoginStatus.ERROR_PASSWORD);
+    }
 }
