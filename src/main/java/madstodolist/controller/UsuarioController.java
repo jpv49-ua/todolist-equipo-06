@@ -4,6 +4,7 @@ import madstodolist.authentication.ManagerUserSession;
 import madstodolist.controller.exception.UsuarioNoAdministradorException;
 import madstodolist.controller.exception.UsuarioNoLogeadoException;
 import madstodolist.controller.exception.UsuarioNotFoundException;
+import madstodolist.dto.PasswordData;
 import madstodolist.dto.PerfilData;
 import madstodolist.dto.UsuarioData;
 import madstodolist.service.UsuarioService;
@@ -110,6 +111,18 @@ public class UsuarioController {
 
         flash.addFlashAttribute("mensaje", "Perfil modificado correctamente");
         return "redirect:/cuenta";
+    }
+
+    @GetMapping("/cuenta/contrasena")
+    public String formCambiarPassword(@ModelAttribute PasswordData passwordData, Model model) {
+
+        // Cada usuario cambia su propia contraseña.
+        // Los campos del formulario nunca vienen rellenos
+        UsuarioData usuario = comprobarUsuarioLogeado();
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("logeado", true);
+        return "formCambiarPassword";
     }
 
     @GetMapping("/registrados")
