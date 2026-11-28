@@ -11,6 +11,10 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.when;
@@ -58,5 +62,38 @@ public class CambiarPasswordWebTest {
                 .andExpect(content().string(allOf(
                         containsString("href=\"/cuenta/contrasena\""),
                         containsString("Cambiar contraseña"))));
+    }
+
+    // Devuelve la etiqueta <input ...> del HTML cuyo atributo name es el indicado
+    private String inputConNombre(String html, String nombre) {
+        Matcher matcher = Pattern.compile("<input[^>]*name=\"" + nombre + "\"[^>]*>").matcher(html);
+        assertThat(matcher.find()).as("Existe el campo " + nombre).isTrue();
+        return matcher.group();
+    }
+
+    @Test
+    public void formularioDeCambioDePasswordTieneTresCamposVacios() throws Exception {
+        // GIVEN
+        // Un usuario logeado con la contraseña "12345678"
+
+        usuarioLogeadoBD("ana.garcia@gmail.com", "12345678");
+
+        // WHEN
+        // pedimos el formulario de cambio de contraseña
+
+        String html = this.mockMvc.perform(get("/cuenta/contrasena"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("action=\"/cuenta/contrasena\"")))
+                .andReturn().getResponse().getContentAsString();
+
+        // THEN
+        // tiene los tres campos de tipo password y ninguno viene relleno
+
+        for (String nombre : new String[]{"passwordActual", "passwordNueva", "passwordNuevaRepetida"}) {
+            String input = inputConNombre(html, nombre);
+            assertThat(input).contains("type=\"password\"");
+            assertThat(input).doesNotContainPattern("value=\"[^\"]+\"");
+        }
+        assertThat(html).doesNotContain("12345678");
     }
 }
