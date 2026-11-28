@@ -21,6 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Objects;
 
 @Controller
 public class UsuarioController {
@@ -133,6 +134,12 @@ public class UsuarioController {
 
         model.addAttribute("usuario", usuario);
         model.addAttribute("logeado", true);
+
+        // La nueva contraseña y su repetición tienen que coincidir
+        if (!Objects.equals(passwordData.getPasswordNueva(), passwordData.getPasswordNuevaRepetida())) {
+            model.addAttribute("error", "Las contraseñas nuevas no coinciden");
+            return "formCambiarPassword";
+        }
 
         try {
             usuarioService.cambiaPassword(usuario.getId(),
