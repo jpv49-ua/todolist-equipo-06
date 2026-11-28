@@ -199,4 +199,24 @@ public class CambiarPasswordWebTest {
         assertThat(usuarioService.login("ana.garcia@gmail.com", "nueva456"))
                 .isEqualTo(UsuarioService.LoginStatus.ERROR_PASSWORD);
     }
+
+    @Test
+    public void cambiarPasswordSinLogearDevuelveNoAutorizado() throws Exception {
+        // GIVEN
+        // Ningún usuario logeado
+
+        when(managerUserSession.usuarioLogeado()).thenReturn(null);
+
+        // WHEN, THEN
+        // tanto el formulario como el envío devuelven un error 401
+
+        this.mockMvc.perform(get("/cuenta/contrasena"))
+                .andExpect(status().isUnauthorized());
+
+        this.mockMvc.perform(post("/cuenta/contrasena")
+                        .param("passwordActual", "12345678")
+                        .param("passwordNueva", "nueva456")
+                        .param("passwordNuevaRepetida", "nueva456"))
+                .andExpect(status().isUnauthorized());
+    }
 }
