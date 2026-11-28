@@ -572,4 +572,19 @@ public class UsuarioServiceTest {
 
         assertThat(usuarioService.login("user@ua", "123")).isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
     }
+
+    @Test
+    public void servicioCambiaPasswordDeUsuarioInexistenteLanzaExcepcion() {
+        // GIVEN
+        // Un usuario en la BD
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN, THEN
+        // si intentamos cambiar la contraseña de un usuario que no existe se produce una excepción
+
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.cambiaPassword(usuarioId + 1000L, "123", "nueva456");
+        });
+    }
 }
