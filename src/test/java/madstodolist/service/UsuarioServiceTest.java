@@ -524,4 +524,31 @@ public class UsuarioServiceTest {
 
         assertThat(usuarioService.login("user@ua", "123")).isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
     }
+
+    @Test
+    public void servicioCambiaPasswordConNuevaVaciaLanzaExcepcion() {
+        // GIVEN
+        // Un usuario en la BD con la contraseña "123"
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN
+        // intentamos cambiar la contraseña por una vacía, en blanco o nula,
+        // THEN
+        // se produce una excepción
+
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.cambiaPassword(usuarioId, "123", "");
+        });
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.cambiaPassword(usuarioId, "123", "   ");
+        });
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.cambiaPassword(usuarioId, "123", null);
+        });
+
+        // y la contraseña no se modifica.
+
+        assertThat(usuarioService.login("user@ua", "123")).isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+    }
 }
