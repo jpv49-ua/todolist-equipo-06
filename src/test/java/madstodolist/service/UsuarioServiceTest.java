@@ -503,4 +503,25 @@ public class UsuarioServiceTest {
         assertThat(usuario.isAdmin()).isFalse();
         assertThat(usuario.isBloqueado()).isFalse();
     }
+
+    @Test
+    public void servicioCambiaPasswordConActualIncorrectaLanzaExcepcion() {
+        // GIVEN
+        // Un usuario en la BD con la contraseña "123"
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN
+        // intentamos cambiar la contraseña indicando una actual incorrecta,
+        // THEN
+        // se produce una excepción
+
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.cambiaPassword(usuarioId, "000", "nueva456");
+        });
+
+        // y la contraseña no se modifica.
+
+        assertThat(usuarioService.login("user@ua", "123")).isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+    }
 }
