@@ -131,4 +131,14 @@ public class UsuarioService {
         usuario = usuarioRepository.save(usuario);
         return modelMapper.map(usuario, UsuarioData.class);
     }
+
+    // Cambia la contraseña de un usuario.
+    // No se modifica ningún otro dato del usuario.
+    @Transactional
+    public UsuarioData cambiaPassword(Long usuarioId, String passwordActual, String passwordNueva) {
+        Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+        usuario.setPassword(passwordNueva);
+        usuario = usuarioRepository.save(usuario);
+        return modelMapper.map(usuario, UsuarioData.class);
+    }
 }
