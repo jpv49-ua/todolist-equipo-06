@@ -130,4 +130,39 @@ public class CambiarPasswordWebTest {
         assertThat(usuarioService.login("ana.garcia@gmail.com", "12345678"))
                 .isEqualTo(UsuarioService.LoginStatus.ERROR_PASSWORD);
     }
+
+    @Test
+    public void cambiarPasswordConActualIncorrectaMuestraError() throws Exception {
+        // GIVEN
+        // Un usuario logeado con la contraseña "12345678"
+
+        usuarioLogeadoBD("ana.garcia@gmail.com", "12345678");
+
+        // WHEN
+        // enviamos el formulario con una contraseña actual incorrecta,
+
+        String html = this.mockMvc.perform(post("/cuenta/contrasena")
+                        .param("passwordActual", "incorrecta")
+                        .param("passwordNueva", "nueva456")
+                        .param("passwordNuevaRepetida", "nueva456"))
+
+        // THEN
+        // se vuelve al formulario mostrando el error,
+
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("alert-danger"),
+                        containsString("La contraseña actual no es correcta"),
+                        containsString("action=\"/cuenta/contrasena\""))))
+                .andReturn().getResponse().getContentAsString();
+
+        // los campos no vienen rellenos con lo enviado
+
+        assertThat(html).doesNotContain("incorrecta").doesNotContain("nueva456");
+
+        // y la contraseña no se modifica.
+
+        assertThat(usuarioService.login("ana.garcia@gmail.com", "12345678"))
+                .isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+    }
 }
