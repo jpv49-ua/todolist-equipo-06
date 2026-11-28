@@ -4,6 +4,7 @@ import madstodolist.authentication.ManagerUserSession;
 import madstodolist.controller.exception.UsuarioNoAdministradorException;
 import madstodolist.controller.exception.UsuarioNoLogeadoException;
 import madstodolist.controller.exception.UsuarioNotFoundException;
+import madstodolist.dto.PasswordData;
 import madstodolist.dto.PerfilData;
 import madstodolist.dto.UsuarioData;
 import madstodolist.service.UsuarioService;
@@ -20,6 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Objects;
 
 @Controller
 public class UsuarioController {
@@ -109,6 +111,46 @@ public class UsuarioController {
         }
 
         flash.addFlashAttribute("mensaje", "Perfil modificado correctamente");
+        return "redirect:/cuenta";
+    }
+
+    @GetMapping("/cuenta/contrasena")
+    public String formCambiarPassword(@ModelAttribute PasswordData passwordData, Model model) {
+
+        // Cada usuario cambia su propia contraseña.
+        // Los campos del formulario nunca vienen rellenos
+        UsuarioData usuario = comprobarUsuarioLogeado();
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("logeado", true);
+        return "formCambiarPassword";
+    }
+
+    @PostMapping("/cuenta/contrasena")
+    public String grabaPasswordModificada(PasswordData passwordData,
+                                          Model model, RedirectAttributes flash) {
+
+        UsuarioData usuario = comprobarUsuarioLogeado();
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("logeado", true);
+
+        // La nueva contraseña y su repetición tienen que coincidir
+        if (!Objects.equals(passwordData.getPasswordNueva(), passwordData.getPasswordNuevaRepetida())) {
+            model.addAttribute("error", "Las contraseñas nuevas no coinciden");
+            return "formCambiarPassword";
+        }
+
+        try {
+            usuarioService.cambiaPassword(usuario.getId(),
+                    passwordData.getPasswordActual(), passwordData.getPasswordNueva());
+        } catch (UsuarioServiceException e) {
+            // Si los datos no son válidos, volvemos al formulario mostrando el error
+            model.addAttribute("error", e.getMessage());
+            return "formCambiarPassword";
+        }
+
+        flash.addFlashAttribute("mensaje", "Contraseña modificada correctamente");
         return "redirect:/cuenta";
     }
 

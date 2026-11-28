@@ -476,4 +476,115 @@ public class UsuarioServiceTest {
             usuarioService.modificaUsuario(usuarioId + 1000L, modificado);
         });
     }
+
+    @Test
+    public void servicioCambiaPasswordUsuario() {
+        // GIVEN
+        // Un usuario en la BD con la contraseña "123"
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN
+        // cambiamos su contraseña indicando la actual correcta
+
+        usuarioService.cambiaPassword(usuarioId, "123", "nueva456");
+
+        // THEN
+        // se puede hacer login con la nueva contraseña y no con la antigua,
+
+        assertThat(usuarioService.login("user@ua", "nueva456")).isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+        assertThat(usuarioService.login("user@ua", "123")).isEqualTo(UsuarioService.LoginStatus.ERROR_PASSWORD);
+
+        // y el resto de datos del usuario no cambia.
+
+        UsuarioData usuario = usuarioService.findById(usuarioId);
+        assertThat(usuario.getEmail()).isEqualTo("user@ua");
+        assertThat(usuario.getNombre()).isEqualTo("Usuario Ejemplo");
+        assertThat(usuario.isAdmin()).isFalse();
+        assertThat(usuario.isBloqueado()).isFalse();
+    }
+
+    @Test
+    public void servicioCambiaPasswordConActualIncorrectaLanzaExcepcion() {
+        // GIVEN
+        // Un usuario en la BD con la contraseña "123"
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN
+        // intentamos cambiar la contraseña indicando una actual incorrecta,
+        // THEN
+        // se produce una excepción
+
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.cambiaPassword(usuarioId, "000", "nueva456");
+        });
+
+        // y la contraseña no se modifica.
+
+        assertThat(usuarioService.login("user@ua", "123")).isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+    }
+
+    @Test
+    public void servicioCambiaPasswordConNuevaVaciaLanzaExcepcion() {
+        // GIVEN
+        // Un usuario en la BD con la contraseña "123"
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN
+        // intentamos cambiar la contraseña por una vacía, en blanco o nula,
+        // THEN
+        // se produce una excepción
+
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.cambiaPassword(usuarioId, "123", "");
+        });
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.cambiaPassword(usuarioId, "123", "   ");
+        });
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.cambiaPassword(usuarioId, "123", null);
+        });
+
+        // y la contraseña no se modifica.
+
+        assertThat(usuarioService.login("user@ua", "123")).isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+    }
+
+    @Test
+    public void servicioCambiaPasswordConNuevaIgualALaActualLanzaExcepcion() {
+        // GIVEN
+        // Un usuario en la BD con la contraseña "123"
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN
+        // intentamos cambiar la contraseña por la misma que ya tiene,
+        // THEN
+        // se produce una excepción
+
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.cambiaPassword(usuarioId, "123", "123");
+        });
+
+        // y la contraseña sigue siendo la misma.
+
+        assertThat(usuarioService.login("user@ua", "123")).isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+    }
+
+    @Test
+    public void servicioCambiaPasswordDeUsuarioInexistenteLanzaExcepcion() {
+        // GIVEN
+        // Un usuario en la BD
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN, THEN
+        // si intentamos cambiar la contraseña de un usuario que no existe se produce una excepción
+
+        Assertions.assertThrows(UsuarioServiceException.class, () -> {
+            usuarioService.cambiaPassword(usuarioId + 1000L, "123", "nueva456");
+        });
+    }
 }

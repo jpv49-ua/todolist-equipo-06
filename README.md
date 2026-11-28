@@ -15,6 +15,7 @@ Versión actual: **1.2.0**
 - Tras registrarse, el usuario entra directamente en la aplicación sin tener que hacer login.
 - Página de cuenta (`/cuenta`) con los datos del usuario logeado, accesible desde el desplegable del usuario.
 - Edición del perfil (`/cuenta/editar`): desde su página de cuenta, cada usuario puede modificar su email, su nombre y su fecha de nacimiento. No se puede dejar el email vacío ni usar uno que ya pertenezca a otro usuario; la contraseña y los atributos `admin` y `bloqueado` no se modifican.
+- Cambio de contraseña (`/cuenta/contrasena`): desde su página de cuenta, cada usuario puede cambiar su contraseña indicando la actual y escribiendo dos veces la nueva. La actual tiene que ser correcta, la nueva no puede estar vacía ni ser igual a la actual, y las dos nuevas tienen que coincidir. Los campos del formulario nunca vienen rellenos. El resto de datos del usuario no se modifica.
 - Comentario en las tareas: cada tarea puede tener un comentario, que se muestra junto a ella en el listado de tareas. En el listado, la columna *Tarea* tiene los botones para editar y borrar la tarea, y la columna *Comentario* los botones para añadir, editar y borrar el comentario. El comentario se escribe en la página `/tareas/{id}`.
 - Equipos: cualquier usuario puede crear equipos, ver sus miembros y unirse o salir de ellos. El administrador puede además cambiar el nombre de un equipo y eliminarlo.
 - - Estado de las tareas: cada tarea personal tiene un estado (`TODO`, `IN_PROGRESS` o `DONE`) que se cambia con un selector en la columna *Estado* del listado de tareas.
@@ -167,7 +168,7 @@ Navegador ──► Controller ──► Service ──► Repository ──► 
 | `model` | Entidades JPA `Usuario`, `Tarea` y `Equipo`. `Usuario` y `Tarea` tienen una relación uno a muchos; `Tarea` tiene además un `comentario` opcional y un `estado` (enum `EstadoTareaEnum`: `TODO`, `IN_PROGRESS`, `DONE`); `Usuario` y `Equipo`, una relación muchos a muchos. `Usuario` incluye los atributos `admin` y `bloqueado`. |
 | `repository` | Interfaces Spring Data (`UsuarioRepository`, `TareaRepository`, `EquipoRepository`). |
 | `service` | Lógica de negocio y transacciones (`UsuarioService`, `TareaService`, `EquipoService`). Devuelve DTOs, no entidades. `InitDbService` carga los datos iniciales en el perfil `dev`. |
-| `dto` | Objetos de transferencia (`UsuarioData`, `TareaData`, `EquipoData`) y de formularios (`LoginData`, `RegistroData`, `PerfilData`). La conversión entre entidades y DTOs se hace con ModelMapper (`config/ModelMapperConfig`). |
+| `dto` | Objetos de transferencia (`UsuarioData`, `TareaData`, `EquipoData`) y de formularios (`LoginData`, `RegistroData`, `PerfilData`, `PasswordData`). La conversión entre entidades y DTOs se hace con ModelMapper (`config/ModelMapperConfig`). |
 | `controller` | Controladores Spring MVC que atienden las peticiones y eligen la plantilla. |
 | `controller/exception` | Excepciones anotadas con `@ResponseStatus` que se traducen en códigos HTTP (401, 404). |
 | `authentication` | `ManagerUserSession`: guarda en la sesión HTTP el id del usuario logeado. |
@@ -205,6 +206,7 @@ Navegador ──► Controller ──► Service ──► Repository ──► 
 | `POST /registrados/{id}/bloquear`, `POST /registrados/{id}/habilitar` | Bloquear o habilitar a un usuario (solo administrador) |
 | `GET /cuenta` | Datos del usuario logeado |
 | `GET/POST /cuenta/editar` | Editar el perfil del usuario logeado |
+| `GET/POST /cuenta/contrasena` | Cambiar la contraseña del usuario logeado |
 | `GET /equipos` | Listado de equipos |
 | `GET /equipos/{id}` | Detalle de un equipo y sus miembros |
 | `GET/POST /equipos/nuevo` | Crear equipo (el creador queda como miembro) |
