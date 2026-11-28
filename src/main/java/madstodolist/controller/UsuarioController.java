@@ -126,12 +126,22 @@ public class UsuarioController {
     }
 
     @PostMapping("/cuenta/contrasena")
-    public String grabaPasswordModificada(PasswordData passwordData, RedirectAttributes flash) {
+    public String grabaPasswordModificada(PasswordData passwordData,
+                                          Model model, RedirectAttributes flash) {
 
         UsuarioData usuario = comprobarUsuarioLogeado();
 
-        usuarioService.cambiaPassword(usuario.getId(),
-                passwordData.getPasswordActual(), passwordData.getPasswordNueva());
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("logeado", true);
+
+        try {
+            usuarioService.cambiaPassword(usuario.getId(),
+                    passwordData.getPasswordActual(), passwordData.getPasswordNueva());
+        } catch (UsuarioServiceException e) {
+            // Si los datos no son válidos, volvemos al formulario mostrando el error
+            model.addAttribute("error", e.getMessage());
+            return "formCambiarPassword";
+        }
 
         flash.addFlashAttribute("mensaje", "Contraseña modificada correctamente");
         return "redirect:/cuenta";
