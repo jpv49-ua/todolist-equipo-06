@@ -125,6 +125,18 @@ public class UsuarioController {
         return "formCambiarPassword";
     }
 
+    @PostMapping("/cuenta/contrasena")
+    public String grabaPasswordModificada(PasswordData passwordData, RedirectAttributes flash) {
+
+        UsuarioData usuario = comprobarUsuarioLogeado();
+
+        usuarioService.cambiaPassword(usuario.getId(),
+                passwordData.getPasswordActual(), passwordData.getPasswordNueva());
+
+        flash.addFlashAttribute("mensaje", "Contraseña modificada correctamente");
+        return "redirect:/cuenta";
+    }
+
     @GetMapping("/registrados")
     public String listadoUsuarios(Model model) {
 
