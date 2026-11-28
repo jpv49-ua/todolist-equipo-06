@@ -476,4 +476,31 @@ public class UsuarioServiceTest {
             usuarioService.modificaUsuario(usuarioId + 1000L, modificado);
         });
     }
+
+    @Test
+    public void servicioCambiaPasswordUsuario() {
+        // GIVEN
+        // Un usuario en la BD con la contraseña "123"
+
+        Long usuarioId = addUsuarioBD();
+
+        // WHEN
+        // cambiamos su contraseña indicando la actual correcta
+
+        usuarioService.cambiaPassword(usuarioId, "123", "nueva456");
+
+        // THEN
+        // se puede hacer login con la nueva contraseña y no con la antigua,
+
+        assertThat(usuarioService.login("user@ua", "nueva456")).isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+        assertThat(usuarioService.login("user@ua", "123")).isEqualTo(UsuarioService.LoginStatus.ERROR_PASSWORD);
+
+        // y el resto de datos del usuario no cambia.
+
+        UsuarioData usuario = usuarioService.findById(usuarioId);
+        assertThat(usuario.getEmail()).isEqualTo("user@ua");
+        assertThat(usuario.getNombre()).isEqualTo("Usuario Ejemplo");
+        assertThat(usuario.isAdmin()).isFalse();
+        assertThat(usuario.isBloqueado()).isFalse();
+    }
 }
